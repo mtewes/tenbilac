@@ -60,3 +60,4 @@ target/
 # My own stuff
 *.pkl
 nogit/
+.DS_store
