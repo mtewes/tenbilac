@@ -1,7 +1,11 @@
 ﻿Tenbilac
 ========
 
-.. warning: undocumented work in progress! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
+	Warning: this is undocumented work in progress! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
+
+
+About
+-----
 
 Tenbilac is a python package implementing an (experiemental) feedforward neural network designed to solve an *inverse regression* problem (aka "calibration problem" of regression, see `wikipedia <https://en.wikipedia.org/wiki/Calibration_(statistics)>`_). It performs a supervised machine learning regression from a noisy feature space to a well known explanatory space, and is trained to minimize *bias* instead of error in this explanatory space.
 
