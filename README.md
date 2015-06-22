@@ -1,2 +1,0 @@
-# tenbilac
-inverse regression network
