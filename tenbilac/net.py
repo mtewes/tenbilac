@@ -167,6 +167,8 @@ class Tenbilac():
 		def f(p):
 			params[:] = p
 			return self.error_calib(input, targets, splitinds)
+			#return self.error_mse(input, targets)
+
 
 		optres = scipy.optimize.fmin_bfgs(
 			f, params,
@@ -178,7 +180,7 @@ class Tenbilac():
 		#print optres
 		if len(optres) == 8:
 			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag, allvecs) = optres
-			finalerror = f(xopt)
+			#finalerror = f(xopt)
 			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
 			
 		else:

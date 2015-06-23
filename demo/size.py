@@ -9,8 +9,8 @@ logging.basicConfig(level=logging.INFO)
 
 #np.random.seed(0)
 
-n = 5000
-nrea = 100 
+n = 200
+nrea = 1000 
 noise_scale = 0.1
 
 params = np.random.triangular(0.1, 0.3, 2.0, size=n).reshape((1, n))
@@ -32,7 +32,7 @@ normobs = obs_normer(obs)
 """
 
 
-net = tenbilac.net.tenbilac(1, [10, 10])
+net = tenbilac.net.Tenbilac(1, [10])
 #net = tenbilac.utils.readpickle("test.pkl")
 
 #for l in net.layers:
@@ -49,13 +49,13 @@ net.train(obs, params, splitinds)
 
 
 
-net.save("test.pkl")
+#net.save("test.pkl")
 
 #exit()
 
 
 
-net = tenbilac.utils.readpickle("test.pkl")
+#net = tenbilac.utils.readpickle("test.pkl")
 
 testpreds = net.run(testobs)
 
@@ -65,9 +65,9 @@ meanpreds = np.array([np.mean(case, axis=1) for case in np.split(preds, splitind
 biases = meanpreds - params
 
 
-firstpreds = np.array([case[:,0:1][0] for case in np.split(preds, splitinds, axis=1)]).transpose()
+#firstpreds = np.array([case[:,0:1][0] for case in np.split(preds, splitinds, axis=1)]).transpose()
 
-print firstpreds.shape	
+#print firstpreds.shape	
 
 #exit()
 
@@ -88,12 +88,13 @@ ax.set_xlabel(r"$\theta$", fontsize=18)
 ax.set_ylabel(r"$< \hat{\theta} - \theta >$", fontsize=18)
 
 
+"""
 ax = fig.add_subplot(1, 3, 3)
 ax.plot(firstpreds.T, biases.T, "b,")
 ax.axhline(0.0)
 ax.set_xlabel(r"$\hat{\theta}$", fontsize=18)
 ax.set_ylabel(r"$< \hat{\theta} - \theta >$", fontsize=18)
-
+"""
 
 
 
