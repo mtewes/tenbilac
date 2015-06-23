@@ -1,4 +1,11 @@
-﻿
+﻿"""
+A layer holds the parameters (weights and biases) to compute the ouput of each of its neurons based on the input of the previous layer.
+This means that the "input" of a neural network is *not* such a Layer object.
+The "first" real Layer in a network is in fact the first hidden layer.
+
+"""
+
+
 import numpy as np
 
 import logging
@@ -68,11 +75,11 @@ class Layer():
 			
 		If input is 2D,
 			input indices: (feature, galaxy)
-			output indices: (node, galaxy)
+			output indices: (neuron, galaxy) -> so this can be fed into the next layer...
 		
 		If input is 3D, 
 			input indices: (realization, feature, galaxy)
-			output indices: (node, realization, galaxy)
+			output indices: (realization, neuron, galaxy)
 			
 		"""
 		
@@ -84,8 +91,14 @@ class Layer():
 			return self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1)))
 		
 		elif input.ndim == 3:
-			assert input.shape[1] == self.ni	
-			return self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1, 1)))
+			assert input.shape[1] == self.ni
+			
+			# Doing this:
+			# self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1, 1)))
+			# ... gives ouput indices (neuron, realization, galaxy)
+			# We need to change the order of those indices:
+				
+			return np.rollaxis(self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1, 1))), 1)
 		
 		else:
 			raise RuntimeError("Input shape error")

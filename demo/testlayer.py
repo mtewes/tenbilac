@@ -25,12 +25,13 @@ layer.biases[1] = 42
 
 print layer.report()
 
-# 2 features, 2 galaxies, 3 realizations:
+# 2 features, 2 galaxies, 4 realizations:
 # galaxy_1 is (1, -1), galaxy_2 is (4, -4)
 # order of indices: realization, feature, galaxy
 input = np.array([
 [[1, 4], [-1, -4]],
 [[1.1, 4], [-1.3, -4]],
+[[1, 4], [-1, -4]],
 [[1, 4], [-1, -4]]
 ])
 # Checking the galaxy 1 and 2:
@@ -44,8 +45,9 @@ print input.shape
 
 output = layer.run(input)
 
-print "ouput = ", output
 
+print "ouput = ", output
+print output.shape
 
 
 # 2 D case:
