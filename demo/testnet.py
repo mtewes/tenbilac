@@ -1,6 +1,6 @@
 
 import numpy as np
-import calibnet
+import tenbilac
 
 
 import logging
@@ -8,38 +8,31 @@ logging.basicConfig(level=logging.INFO)
 
 
 
-net = calibnet.net.Calibnet(ni=2, nhs=[3, 3], nrea=1, onlyid=True)
+net = tenbilac.net.Tenbilac(ni=2, nhs=[3, 3], onlyid=True)
 
 #for l in net.layers:
 #	l.addnoise()
-
 #print net.nparams()
 
 params = net.get_params_ref()
 
-#print params
-
-#layer.addnoise()
-
-#layer.report()
-
-
-#layer.weights[1, 1] = 1
-#layer.biases[2] = 10
-#layer.report()
+print net.report()
 
 ni = 2
 ngal = 5
+nrea = 100
+no = 1
 
 
-#input = np.random.randn(ni * ngal).reshape((ni, ngal))
-input = np.ones(ni * ngal).reshape((ni, ngal))
-
-#input = np.array([[1, 1, -1], [2, 2, -2]])
-#input = np.array([1, 2])
+#inputs = np.random.randn(ni * ngal).reshape((ni, ngal))
+inputs = np.ones(ni * ngal * nrea).reshape((nrea, ni, ngal))
 
 
-print "input = ", input
+#inputs = np.array([[1, 1, -1], [2, 2, -2]])
+#inputs = np.array([1, 2])
+
+
+print "inputs shape", inputs.shape
 
 params[0] = 10
 params[9] = 20
@@ -47,9 +40,15 @@ params[21] = 20
 
 print net.report()
 
-output = net.run(input)
-print "ouput = ", output
+outputs = net.run(inputs)
+print "ouputs shape ", outputs.shape
 
+
+
+targets = np.ones(no * ngal).reshape((no, ngal))
+
+
+net.train(inputs, targets, tenbilac.err.MSB())
 
 
 

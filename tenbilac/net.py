@@ -18,32 +18,22 @@ class Tenbilac():
 	This is Tenbilac
 	"""
 	
-	def __init__(self, ni, nhs, nrea=1, onlyid=False):
+	def __init__(self, ni, nhs, no=1, onlyid=False):
 		"""
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
-		:param nrea: Number of realizations
+		:type nhs: tuple
+		:param no: Number of ouput neurons
 		"""
 	
 		self.ni = ni
 		self.nhs = nhs
-		self.nrea = nrea
-		self.arch = np.array([self.ni]+self.nhs+[1])
-		
-		#self.nweights = self.arch + 1 # for each node, the bias is just one more weight
-
-		"""
-		self.weights = []
-		for i in range(1, len(self.arch)):
-			self.weights.append(np.zeros((self.arch[i], self.arch[i-1]+1)))
-		
-		for (i, w) in enumerate(self.weights):
-			logger.info("Weights {i} shape: {shape}".format(i=i, shape=w.shape))	
-		"""
+		self.no = no
+		self.arch = np.array([self.ni]+self.nhs+[self.no])
 		
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
-		for (i, nh) in enumerate(self.nhs + [1]):
+		for (i, nh) in enumerate(self.nhs + [self.no]):
 				self.layers.append(layer.Layer(ni=self.arch[i], nn=nh, actfct=act.Sig(), name=str(i)))
 		# For the output layer, set id activation function:
 		self.layers[-1].actfct = act.Id()
@@ -59,7 +49,7 @@ class Tenbilac():
 		"""
 		A short description of the network
 		"""
-		return "Tenbilac with architecture {self.arch} and {nparams} params for {self.nrea} realizations".format(self=self, nparams=self.nparams())
+		return "Tenbilac with architecture {self.arch} and {nparams} params".format(self=self, nparams=self.nparams())
 
 	
 	def report(self):
@@ -73,14 +63,11 @@ class Tenbilac():
 		return "\n".join(txt)
 
 	
-	
 	def save(self, filepath):
 		"""
 		Saves self into a pkl file
 		"""
-		
 		utils.writepickle(self, filepath)		
-
 	
 	
 	def nparams(self):
@@ -114,7 +101,7 @@ class Tenbilac():
 
 	def run(self, input):
 		"""
-		Propagates 2D input through the network. First index is feature, second is galaxy
+		Propagates input through the network. This works for 1D, 2D, and 3D inputs, see layer.run().
 		"""
 		
 		output = input
@@ -123,36 +110,13 @@ class Tenbilac():
 		return output
 		
 	
-	def error_mse(self, input, targets):
-		"""
-		The conventional error function
-		"""
-		output = self.run(input)
-		return np.mean(np.square(output - targets))
-		
-		
-	def error_calib(self, input, targets, splitinds):
-		"""
-		Error on bias
-		"""
-		output = self.run(input)
-		
-		#print output.shape
-		
-		means = np.array([np.mean(case, axis=1) for case in np.split(output, splitinds, axis=1)]).transpose()
-		
-		ret = np.mean(np.square(means - targets))
-			
-		print ret
-		return ret
-		
 	
-	def train(self, input, targets, splitinds):
+	def train(self, inputs, targets, errfct):
 		"""
-		
+		First attempt of black-box training to minimize the given errfct
 		"""
 			
-		logger.info("Starting training with input {0} and targets {1}".format(str(input.shape), str(targets.shape)))
+		logger.info("Starting training with input {0} and targets {1}".format(str(inputs.shape), str(targets.shape)))
 	
 		#assert len(targets.shape) == 2
 		#assert len(input.shape) == 2
@@ -166,10 +130,8 @@ class Tenbilac():
 		
 		def f(p):
 			params[:] = p
-			return self.error_calib(input, targets, splitinds)
-			#return self.error_mse(input, targets)
-
-
+			return errfct(self, inputs, targets)
+		
 		optres = scipy.optimize.fmin_bfgs(
 			f, params,
 			fprime=None,
@@ -187,26 +149,4 @@ class Tenbilac():
 			logger.warning("Optimization output is fishy")
 	
 			
-	def predict(self, input):
-		"""
-		Input is a single case, 1D:
-			- features
-		"""
-		
-		
-	def masspredict(self, input):
-		"""
-		Input is an array with several cases, 2D:
-			- case
-			- feature
-		"""
-
-	def propagate(self, train_input):
-		"""
-		Input has 3 dimensions
-		- case
-		- feature
-		- realization
-		"""
-		
 	

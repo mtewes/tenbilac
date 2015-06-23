@@ -62,43 +62,43 @@ class Layer():
 		return self.nn * (self.ni + 1)
 	
 	
-	def run(self, input):
+	def run(self, inputs):
 		"""
 		Computes output from input, as "numpyly" as possible, using only np.dot (given that
 		np.tensordot seems not available for masked arrays, but we do want this to run on masked
 		arrays when dealing with multiple realizations).
 		This means that np.dot determines the order of indices, as following.
 		
-		If input is 1D,
+		If inputs is 1D,
 			the input is just an array of features for a single galaxy
 			the output is a 1D array with the output of each neuron
 			
-		If input is 2D,
+		If inputs is 2D,
 			input indices: (feature, galaxy)
 			output indices: (neuron, galaxy) -> so this can be fed into the next layer...
 		
-		If input is 3D, 
+		If inputs is 3D, 
 			input indices: (realization, feature, galaxy)
 			output indices: (realization, neuron, galaxy)
 			
 		"""
 		
-		if input.ndim == 1:
-			return self.actfct(np.dot(self.weights, input) + self.biases)
+		if inputs.ndim == 1:
+			return self.actfct(np.dot(self.weights, inputs) + self.biases)
 		
-		elif input.ndim == 2:
-			assert input.shape[0] == self.ni		
-			return self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1)))
+		elif inputs.ndim == 2:
+			assert inputs.shape[0] == self.ni		
+			return self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1)))
 		
-		elif input.ndim == 3:
-			assert input.shape[1] == self.ni
+		elif inputs.ndim == 3:
+			assert inputs.shape[1] == self.ni
 			
 			# Doing this:
-			# self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1, 1)))
+			# self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1)))
 			# ... gives ouput indices (neuron, realization, galaxy)
 			# We need to change the order of those indices:
 				
-			return np.rollaxis(self.actfct(np.dot(self.weights, input) + self.biases.reshape((self.nn, 1, 1))), 1)
+			return np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
 		
 		else:
 			raise RuntimeError("Input shape error")
