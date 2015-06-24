@@ -1,5 +1,5 @@
 ﻿"""
-
+This is Tenbilac!
 """
 
 import numpy as np
@@ -13,9 +13,8 @@ from . import layer
 from . import utils
 
 class Tenbilac():
-
 	"""
-	This is Tenbilac
+	Object representing a network made out of one or several hidden layers.
 	"""
 	
 	def __init__(self, ni, nhs, no=1, onlyid=False):
@@ -24,6 +23,8 @@ class Tenbilac():
 		:param nhs: Numbers of neurons in hidden layers
 		:type nhs: tuple
 		:param no: Number of ouput neurons
+		:param onlyid: Set this to true if you want identity activation functions on all layers
+			(useful for debugging).
 		"""
 	
 		self.ni = ni
@@ -47,7 +48,7 @@ class Tenbilac():
 	
 	def __str__(self):
 		"""
-		A short description of the network
+		A short string describing the network
 		"""
 		return "Tenbilac with architecture {self.arch} and {nparams} params".format(self=self, nparams=self.nparams())
 
