@@ -110,33 +110,35 @@ class Tenbilac():
 		return output
 		
 	
+	def optcallback(self, *args):
+		"""
+		Function called by the optimizer to print out some info about the training progress
+		"""
+		#print args
+		logger.info("Current training error: {0}".format(self.tmperr))
 	
-	def train(self, inputs, targets, errfct):
+	
+	
+	def train(self, inputs, targets, errfct, maxiter=100):
 		"""
 		First attempt of black-box training to minimize the given errfct
 		"""
 			
 		logger.info("Starting training with input {0} and targets {1}".format(str(inputs.shape), str(targets.shape)))
 	
-		#assert len(targets.shape) == 2
-		#assert len(input.shape) == 2
-		#assert input.shape[0] == targets.shape
-		
-		for l in self.layers:
-			l.addnoise()
-
-
 		params = self.get_params_ref()
 		
 		def f(p):
 			params[:] = p
-			return errfct(self, inputs, targets)
+			err = errfct(self.run(inputs), targets)
+			self.tmperr = err
+			return err
 		
 		optres = scipy.optimize.fmin_bfgs(
 			f, params,
 			fprime=None,
-			maxiter=100,
-			full_output=True, disp=True, retall=True, callback=None)
+			maxiter=maxiter,
+			full_output=True, disp=True, retall=True, callback=self.optcallback)
 	
 		
 		#print optres
