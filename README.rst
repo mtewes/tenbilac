@@ -1,7 +1,7 @@
 ﻿Tenbilac
 ========
 
-.. image:: sphinx/_static/tenbilac.png
+.. image:: https://raw.githubusercontent.com/mtewes/tenbilac/master/sphinx/_static/tenbilac.png
 	:align: center
 	:alt: alternate text
 
