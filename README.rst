@@ -1,4 +1,4 @@
-﻿Tenbilac
+Tenbilac
 ========
 
 .. image:: https://raw.githubusercontent.com/mtewes/tenbilac/master/sphinx/_static/tenbilac.png
