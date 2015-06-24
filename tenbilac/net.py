@@ -144,7 +144,7 @@ class Tenbilac():
 		"""
 		#print args
 		self.tmpoptit += 1
-		logger.info("Training iteration {self.tmpoptit:4d}, error = {self.tmperr:.8e}".format(self=self))
+		logger.info("Training iteration {self.tmpoptit:4d}, cost = {self.tmperr:.8e}".format(self=self))
 		
 	
 	
