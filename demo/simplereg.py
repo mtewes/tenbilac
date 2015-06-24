@@ -1,5 +1,6 @@
 """
-This demo tests the network for a regular regression (not inverse).
+This demo tests the network by asking for a plain regular regression (not inverse),
+in 1D.
 
 """
 
@@ -26,16 +27,14 @@ params_normer = tenbilac.utils.Normer(params)
 normobs = obs_normer(obs)
 normparams = params_normer(params)
 
-testparams = np.linspace(-3.0, 13, ntest).reshape((1, ntest))
+testparams = np.linspace(-1.0, 11, ntest).reshape((1, ntest))
 normtestparams = params_normer(testparams)
 
 net = tenbilac.net.Tenbilac(1, [3])
-
-for l in net.layers:
-	l.addnoise()
+net.addnoise(wscale=0.3, bscale=0.3)
 
 # We train this normal (non-inverse) regression with params as inputs, and observations as output:
-net.train(normparams, normobs, tenbilac.err.MSE(), maxiter=500)
+net.train(normparams, normobs, tenbilac.err.mse, maxiter=500)
 
 # Predicting the testparams
 normtestpreds = net.run(normtestparams)
