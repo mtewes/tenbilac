@@ -13,6 +13,10 @@ class MSE:
 	Standard MSE, simply treats realizations as if they were independent galaxies	
 	"""
 
+	def __call__(self, net, inputs, targets):
+	
+		return np.mean(np.square(net.run(inputs) - targets))
+		#return np.mean(np.square(net.run(inputs[0]) - targets))
 
 
 class MSB:
