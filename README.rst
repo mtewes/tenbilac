@@ -5,7 +5,7 @@ Tenbilac
 	:align: center
 	:alt: alternate text
 
-	Warning: this is undocumented work in progress! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
+Warning: this is undocumented work in progress! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
 
 
 About
