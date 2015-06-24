@@ -81,6 +81,10 @@ class Tenbilac():
 		"""
 		Get a single 1D numpy array containing references to all network weights and biases.
 		
+		Note that each time you call this, you loose the "connection" to any previous calls.
+		
+		To do: fix this, a simple view should do it.
+		
 		We use the fact that slicing an array returns a view of it.
 		"""
 		
@@ -99,6 +103,29 @@ class Tenbilac():
 		return ref
 
 
+	def addnoise(self, **kwargs):
+		"""
+		Adds random noise to all parameters.
+		"""
+		for l in self.layers:
+			l.addnoise(**kwargs)
+			
+			
+	def setidentity(self):
+		"""
+		Adjusts the network parameters so to approximatively get an identity relation
+		between the ith output and the ith input (for each i in the outputs).
+		
+		This should be a good starting position for "calibration" tasks. Example: first
+		input feature is observed galaxy ellipticity g11, and first output is true g1.
+		"""
+		
+		for l in self.layers:
+			l.zero() # Sets everything to zero
+			l.weights[0, 0] = 1.0 # Now we set selected weights to 1.0 (leaving biases at 0.0)
+			# more here...
+		
+
 	def run(self, input):
 		"""
 		Propagates input through the network. This works for 1D, 2D, and 3D inputs, see layer.run().
@@ -115,8 +142,9 @@ class Tenbilac():
 		Function called by the optimizer to print out some info about the training progress
 		"""
 		#print args
-		logger.info("Current training error: {0}".format(self.tmperr))
-	
+		self.tmpoptit += 1
+		logger.info("Training iteration {self.tmpoptit:4d}, error = {self.tmperr:.8e}".format(self=self))
+		
 	
 	
 	def train(self, inputs, targets, errfct, maxiter=100):
@@ -127,6 +155,7 @@ class Tenbilac():
 		logger.info("Starting training with input {0} and targets {1}".format(str(inputs.shape), str(targets.shape)))
 	
 		params = self.get_params_ref()
+		self.tmpoptit = 0
 		
 		def f(p):
 			params[:] = p
@@ -150,5 +179,7 @@ class Tenbilac():
 		else:
 			logger.warning("Optimization output is fishy")
 	
-			
+	
+	
+	
 	
