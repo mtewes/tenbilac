@@ -10,17 +10,24 @@ logging.basicConfig(level=logging.INFO)
 
 net = tenbilac.net.Tenbilac(ni=2, nhs=[3, 3], onlyid=True)
 
-#for l in net.layers:
-#	l.addnoise()
-#print net.nparams()
-
 params = net.get_params_ref()
+
+print params
+
+net.addnoise()
+
+print params
+
+
+net.setidentity()
+
+print params
 
 print net.report()
 
 ni = 2
-ngal = 5
-nrea = 100
+ngal = 500
+nrea = 10
 no = 1
 
 
@@ -48,7 +55,8 @@ print "ouputs shape ", outputs.shape
 targets = np.ones(no * ngal).reshape((no, ngal))
 
 
-net.train(inputs, targets, tenbilac.err.MSB())
+net.train(inputs, targets, tenbilac.err.msb, maxiter=3)
 
 
 
+print net.report()
