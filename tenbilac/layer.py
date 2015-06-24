@@ -41,6 +41,13 @@ class Layer():
 		self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
 		self.biases += bscale * np.random.randn(self.biases.size)
 	
+	def zero(self):
+		"""
+		Sets all weights and biases to zero
+		"""
+		self.weights *= 0.0
+		self.biases *= 0.0
+	
 	
 	def report(self):
 		"""
