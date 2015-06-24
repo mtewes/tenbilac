@@ -18,7 +18,7 @@ class Normer:
 	-1 and 1 (type="-11"), or around 0 with a std of 1 (type="std").
 	
 	For each feature, the same normalization is applied to all realizations of all galaxies.
-	The details of the normalization are kept in the Normer object, so simply use the same
+	The details of the normalization are kept in the Normer object, so that one can simply use the same
 	object to denorm stuff afterwards.
 	
 	This works with inputs (3D or 2D) and outputs or targets (2D), with indices
@@ -40,17 +40,12 @@ class Normer:
 		if type in ["01", "-11"]:
 		
 			if x.ndim == 3:# If we have several realizations:
-				min = np.min(np.min(x, axis=0), axis=1)
+				min = np.min(np.min(x, axis=0), axis=1) # Computes the min along the first and thrid axis.
 				dist = np.max(np.max(x, axis=0), axis=1) - min
 			elif x.ndim == 2:
-				min = np.min(x, axis=1)
+				min = np.min(x, axis=1) # Only along the second axes (i.e., "galaxies")
 				dist = np.max(x, axis=1) - min
-						
-			# min and dist are 1D arrays, with as many elements as features.
-			# We reshape them
-			min.shape = (1, min.size)
-			dist.shape = (1, dist.size)
-			
+							
 			self.a = min
 			self.b = dist
 				
@@ -61,14 +56,9 @@ class Normer:
 				
 			avg = np.mean(x, axis=1) # Along galaxies
 			std = np.std(x, axis=1)
-			
-			avg.shape = (1, avg.size)
-			std.shape = (1, std.size)
-			
+						
 			self.a = avg
 			self.b = std
-			
-			
 			
 		else:
 			raise RuntimeError("Unknown Normer type")		
@@ -83,11 +73,21 @@ class Normer:
 	def __call__(self, x):
 		"""
 		Returns the normalized data.
-		Cool, given the format of self.a and self.b, same code works for both 2D and 3D.
 		"""
-		x = np.asfarray(x)
-		res = (x - self.a) / self.b
+		res = np.asfarray(x)
+		if res.ndim not in (2, 3):
+			raise ValueError("Cannot handle this array shape")
+
+		assert self.a.ndim == 1
+		assert self.b.ndim == 1
 		
+		if res.shape[-2] != self.a.shape[0]:
+			raise RuntimeError("Number of features does not match!")
+			
+		atiled = np.tile(self.a.reshape(self.a.size, 1), (1, res.shape[-1]))
+		btiled = np.tile(self.b.reshape(self.b.size, 1), (1, res.shape[-1]))			
+		res = (res - atiled) / btiled
+					
 		if self.type == "-11":
 			res = 2.0*res - 1.0
 		
@@ -98,11 +98,22 @@ class Normer:
 		Denorms the data
 		"""
 		res = np.asfarray(x)
+		if res.ndim not in (2, 3):
+			raise ValueError("Cannot handle this array shape")
+
+		assert self.a.ndim == 1
+		assert self.b.ndim == 1
 		
 		if self.type == "-11":
-			res = (x + 1.0) / 2.0
+			res = (res + 1.0) / 2.0
 
-		res = x * self.b + self.a
+		if res.shape[-2] != self.a.shape[0]:
+			raise RuntimeError("Number of features does not match!")
+			
+		atiled = np.tile(self.a.reshape(self.a.size, 1), (1, res.shape[-1]))
+		btiled = np.tile(self.b.reshape(self.b.size, 1), (1, res.shape[-1]))			
+		res = res * btiled + atiled
+		
 		return res
 
 
