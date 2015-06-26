@@ -10,20 +10,24 @@ logging.basicConfig(level=logging.INFO)
 
 #np.random.seed(0)
 
+def noise(n):
+	return np.random.randn(n)
+	#return 0.1*(np.exp(0.4*np.random.randn(n)) - 0.7)
+
 
 # The data that will be used for training:
-n = 500 # Number of "objects" (= number of parameters "theta")
-nrea = 100 # How many realizations of the data ("observations") per parameter
+n = 200 # Number of "objects" (= number of parameters "theta")
+nrea = 1000 # How many realizations of the data ("observations") per parameter
 noise_scale = 0.1
 
-params = np.random.triangular(0.1, 0.3, 2.0, size=n).reshape((1, n))
-obs = np.array([np.sqrt(4.0 + params**2) + noise_scale*np.random.randn(n).reshape((1, n)) for rea in range(nrea)])
+params = np.random.triangular(0.1, 0.2, 2.0, size=n).reshape((1, n))
+obs = np.array([np.sqrt(4.0 + params**2) + noise_scale*noise(n).reshape((1, n)) for rea in range(nrea)])
 
 
 # To study bias afterwards, it looks nicer to go uniform in params, and with even more nrea:
 uninrea = 1000
 uniparams = np.linspace(0.1, 2.0, n).reshape((1, n))
-uniobs = np.array([np.sqrt(4.0 + uniparams**2) + noise_scale*np.random.randn(n).reshape((1, n)) for rea in range(uninrea)])
+uniobs = np.array([np.sqrt(4.0 + uniparams**2) + noise_scale*noise(n).reshape((1, n)) for rea in range(uninrea)])
 
 
 # To plot the inverse regression, uniform in obs:

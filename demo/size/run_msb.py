@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 (n, nrea, noise_scale, params, obs, obs_normer, params_normer, normobs, normparams, uninrea, uniparams, uniobs, ntest, testobs, normtestobs, normuniparams, normuniobs) = tenbilac.utils.readpickle("data.pkl")
 
 
-net = tenbilac.net.Tenbilac(1, [10])
+net = tenbilac.net.Tenbilac(1, [5])
 net.addnoise()
 net.train(normobs, normparams, tenbilac.err.msb, maxiter=200)
 net.save("net_msb.pkl")

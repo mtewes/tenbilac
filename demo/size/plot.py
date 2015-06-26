@@ -28,37 +28,44 @@ firstreapreds_avg = params_normer.denorm(net_avg.run(normuniobs[0]))
 biases_avg = np.mean(preds_avg, axis=0) - uniparams
 
 
+trutheta = np.linspace(0.0, 3.0, 100)
+trud = np.sqrt(4.0 + np.square(trutheta))
 
 
 fig = plt.figure(figsize=(15, 5))
 
 ax = fig.add_subplot(1, 3, 1)
-ax.plot(params.T, obs[0].T, marker=".", color="gray", ls="None")
-ax.plot(testpreds_mse.T, testobs.T, "r-", label="Standard MSE", lw=2)
-ax.plot(testpreds_avg.T, testobs.T, "b-", label=r"Learning on $< d >$", lw=2)
-ax.plot(testpreds_msb.T, testobs.T, "g-", label="Tenbilac MSB", lw=2)
+ax.plot(params.T, obs[0].T, marker=".", color="gray", ls="None", ms=2)
+ax.plot(trutheta, trud, "r-", color="black", dashes=(5, 5), lw=1.5, label=r"$d = \sqrt{2^2 + \theta^2}$")
+ax.plot(testpreds_mse.T, testobs.T, "r-", label="Standard MSE", lw=1.5)
+ax.plot(testpreds_avg.T, testobs.T, "b-", label=r"Learning on $< d >$", lw=1.5)
+ax.plot(testpreds_msb.T, testobs.T, "g-", label="Tenbilac MSB", lw=1.5)
 ax.set_xlabel(r"$\theta$ $\mathrm{and}$ $\hat{\theta}$", fontsize=18)
 ax.set_ylabel(r"$d$", fontsize=18)
-
+ax.set_xlim(-1.2, 2.4)
+ax.set_ylim(1.6, 3.1)
 ax.legend(loc=2)
 
 ax = fig.add_subplot(1, 3, 2)
-ax.plot(uniparams.T, biases_mse.T, marker=".", color="red", ls="None")
-ax.plot(uniparams.T, biases_avg.T, marker=".", color="blue", ls="None")
-ax.plot(uniparams.T, biases_msb.T, marker=".", color="green", ls="None")
+ax.plot(uniparams.T, biases_mse.T, marker=".", color="red", ls="None", ms=2)
+ax.plot(uniparams.T, biases_avg.T, marker=".", color="blue", ls="None", ms=2)
+ax.plot(uniparams.T, biases_msb.T, marker=".", color="green", ls="None", ms=2)
 ax.axhline(0.0, color="black", lw=2)
 ax.set_xlabel(r"$\theta$", fontsize=18)
 ax.set_ylabel(r"$< \hat{\theta} - \theta >$", fontsize=18)
-
+ax.set_xlim(0.0, 2.0)
+ax.set_ylim(-0.3, 0.4)
 
 
 ax = fig.add_subplot(1, 3, 3)
-ax.plot(firstreapreds_mse.T, biases_mse.T, marker=".", color="red", ls="None")
-ax.plot(firstreapreds_avg.T, biases_avg.T, marker=".", color="blue", ls="None")
-ax.plot(firstreapreds_msb.T, biases_msb.T, marker=".", color="green", ls="None")
+ax.plot(firstreapreds_mse.T, biases_mse.T, marker=".", color="red", ls="None", ms=2)
+ax.plot(firstreapreds_avg.T, biases_avg.T, marker=".", color="blue", ls="None", ms=2)
+ax.plot(firstreapreds_msb.T, biases_msb.T, marker=".", color="green", ls="None", ms=2)
 ax.axhline(0.0, color="black", lw=2)
 ax.set_xlabel(r"$\hat{\theta}$", fontsize=18)
 ax.set_ylabel(r"$< \hat{\theta} - \theta >$", fontsize=18)
+ax.set_xlim(-1.7, 2.5)
+ax.set_ylim(-0.3, 0.4)
 
 
 

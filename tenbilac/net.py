@@ -167,14 +167,16 @@ class Tenbilac():
 		optres = scipy.optimize.fmin_bfgs(
 			f, params,
 			fprime=None,
-			maxiter=maxiter,
+			maxiter=maxiter, gtol=1e-05,
 			full_output=True, disp=True, retall=True, callback=self.optcallback)
 	
 		
 		#print optres
 		if len(optres) == 8:
 			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag, allvecs) = optres
-			#finalerror = f(xopt)
+			
+			finalerror = f(xopt) # Is it important to do this, to set the optimal parameters?
+			
 			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
 			
 		else:
