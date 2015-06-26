@@ -20,14 +20,17 @@ n = 200 # Number of "objects" (= number of parameters "theta")
 nrea = 1000 # How many realizations of the data ("observations") per parameter
 noise_scale = 0.1
 
-params = np.random.triangular(0.1, 0.2, 2.0, size=n).reshape((1, n))
+
+#params = np.random.triangular(0.1, 0.2, 2.0, size=n).reshape((1, n))
+params = np.linspace(0.1, 2.0, n).reshape((1, n))
 obs = np.array([np.sqrt(4.0 + params**2) + noise_scale*noise(n).reshape((1, n)) for rea in range(nrea)])
 
 
 # To study bias afterwards, it looks nicer to go uniform in params, and with even more nrea:
+unin = 1000
 uninrea = 1000
-uniparams = np.linspace(0.1, 2.0, n).reshape((1, n))
-uniobs = np.array([np.sqrt(4.0 + uniparams**2) + noise_scale*noise(n).reshape((1, n)) for rea in range(uninrea)])
+uniparams = np.linspace(0.1, 2.0, unin).reshape((1, unin))
+uniobs = np.array([np.sqrt(4.0 + uniparams**2) + noise_scale*noise(unin).reshape((1, unin)) for rea in range(uninrea)])
 
 
 # To plot the inverse regression, uniform in obs:
