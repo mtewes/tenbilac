@@ -1,4 +1,4 @@
-﻿"""
+"""
 Activation functions
 """
 

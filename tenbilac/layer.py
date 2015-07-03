@@ -1,4 +1,4 @@
-﻿"""
+"""
 A layer holds the parameters (weights and biases) to compute the ouput of each of its neurons based on the input of the previous layer.
 This means that the "input" of a neural network is *not* such a Layer object.
 The "first" real Layer in a network is in fact the first hidden layer.
