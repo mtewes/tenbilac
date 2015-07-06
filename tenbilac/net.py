@@ -43,6 +43,13 @@ class Tenbilac():
 			for l in self.layers:
 				l.actfct = act.Id()
 		
+		
+		# We initialize some counters for the optimization:
+		self.optit = 0
+		self.optcall = 0
+		self.opterr = np.inf
+		
+		
 		logger.info("Built " + str(self))
 
 	
@@ -108,6 +115,9 @@ class Tenbilac():
 		"""
 		Adds random noise to all parameters.
 		"""
+		
+		logger.debug("Adding noise to network parameters...")
+		
 		for l in self.layers:
 			l.addnoise(**kwargs)
 			
@@ -120,6 +130,8 @@ class Tenbilac():
 		This should be a good starting position for "calibration" tasks. Example: first
 		input feature is observed galaxy ellipticity g11, and first output is true g1.
 		"""
+
+		logger.info("Setting identity weights...")
 		
 		for l in self.layers:
 			l.zero() # Sets everything to zero
@@ -127,49 +139,118 @@ class Tenbilac():
 			# more here...
 		
 
-	def run(self, input):
+	def run(self, inputs):
 		"""
 		Propagates input through the network. This works for 1D, 2D, and 3D inputs, see layer.run().
+		Note that this forward-running does not care about the fact that some of the inputs might be masked!
 		"""
 		
-		output = input
+		output = inputs
 		for l in self.layers:
 			output = l.run(output)
 		return output
-		
+	
+			
 	
 	def optcallback(self, *args):
 		"""
 		Function called by the optimizer to print out some info about the training progress
 		"""
 		#print args
-		self.tmpoptit += 1
-		logger.info("Training iteration {self.tmpoptit:4d}, cost = {self.tmperr:.8e}".format(self=self))
+		self.optit += 1
+		logger.info("Training iteration {self.optit:4d}, cost = {self.opterr:.8e}".format(self=self))
+		if self.tmpitersavefilepath != None:
+			self.save(self.tmpitersavefilepath)
 		
 	
 	
-	def train(self, inputs, targets, errfct, maxiter=100):
+	def train(self, inputs, targets, errfct, maxiter=100, itersavefilepath=None, verbose=True):
 		"""
 		First attempt of black-box training to minimize the given errfct
+		
+		
+		:param itersavefilepath: Path to save the network at each optimization callback.
+		:type itersavefilepath: string
+		
 		"""
 			
-		logger.info("Starting training with input {0} and targets {1}".format(str(inputs.shape), str(targets.shape)))
+		logger.info("Starting training with input = {intype} of shape {inshape} and targets = {tartype} of shape {tarshape}".format(
+			intype=str(type(inputs)), inshape=str(inputs.shape), tartype=str(type(targets)), tarshape=str(targets.shape)))
+	
+		if inputs.ndim != 3 and targets.ndim != 2:
+			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
+		
+		assert type(targets) == np.ndarray # This should not be masked
+		
+		# We will "run" the network without paying attention to the masks.
+		# Instead, we now manually generate a mask for the ouputs, so that the errorfunction can disregard the masked realizations.
+		# Indeed all this masking stays the same for given training data, no need to compute this at every iteration...
+		
+		if isinstance(inputs, np.ma.MaskedArray):
+			
+			# First the consequence of the masked inputs: If any feature of a realization is maksed, the full realization should
+			# be disregarded.
+			assert inputs.mask.ndim == 3
+			outputsmask = np.any(inputs.mask, axis=1) # This is 2D (rea, gal)
+			# Let's also compute a mask for galaxies, just to see how many are affected:
+			galmask = np.any(outputsmask, axis=0) # This is 1D (gal)
+			galmaskall = np.all(outputsmask, axis=0) # This is 1D (gal)
+			
+			txt = []
+			
+			txt.append("In total {0} realizations ({1:.2%}) will be disregarded due to {2} masked features.".format(np.sum(outputsmask), float(np.sum(outputsmask))/float(outputsmask.size), np.sum(inputs.mask)))
+			txt.append("This affects {0} ({1:.2%}) of the {2} training cases,".format(np.sum(galmask), float(np.sum(galmask))/float(galmask.size), galmask.size))
+			txt.append("and {0} ({1:.2%}) of the training cases have no useable realizations at all.".format(np.sum(galmaskall), float(np.sum(galmaskall))/float(galmaskall.size)))
+			
+			logger.info(" ".join(txt))
+			
+			# Now we inflate this outputsmask to make it 3D (rea, label, gal)
+			# Values are the same for all labels, but this is required for easy use in the error functions.
+			outputsmask = np.swapaxes(np.tile(outputsmask, (self.no, 1, 1)), 0, 1)
+			
+			inputs = inputs.filled(fill_value=0.0) # We no longer need this to be a masked array.
+			
+		else:
+			outputsmask = None
+		
+		# Preparing stuff used by the callback function to save progress:
+		if itersavefilepath != None:
+			self.tmpitersavefilepath = itersavefilepath
+			# And let's test this out before we start, so that it fails fast in case of a problem:
+			self.save(self.tmpitersavefilepath)
+		else:
+			self.tmpitersavefilepath = None
+		
 	
 		params = self.get_params_ref()
-		self.tmpoptit = 0
 		
-		def f(p):
+		
+		def cost(p):
 			params[:] = p
-			err = errfct(self.run(inputs), targets)
-			self.tmperr = err
+			outputs = self.run(inputs) # This is not a masked array!
+			if outputsmask == None:
+				err = errfct(outputs, targets)
+			else:
+				err = errfct(np.ma.array(outputs, mask=outputsmask), targets)
+			self.opterr = err
+			self.optcall += 1
+			if verbose:
+				logger.debug("Call number {self.optcall:8d}: cost = {self.opterr:.8e}".format(self=self))
+				logger.debug("\n" + self.report())
 			return err
 		
+		"""
 		optres = scipy.optimize.fmin_bfgs(
-			f, params,
+			cost, params,
 			fprime=None,
 			maxiter=maxiter, gtol=1e-05,
 			full_output=True, disp=True, retall=True, callback=self.optcallback)
-	
+		"""
+		optres = scipy.optimize.fmin_powell(
+			cost, params,
+			maxiter=maxiter, ftol=1e-05,
+			full_output=True, disp=True, retall=True, callback=self.optcallback)
+		
 		
 		#print optres
 		if len(optres) == 8:
@@ -182,7 +263,7 @@ class Tenbilac():
 		else:
 			logger.warning("Optimization output is fishy")
 	
-	
+		
 	
 	
 	

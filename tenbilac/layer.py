@@ -37,7 +37,6 @@ class Layer():
 		"""
 		Adds some noise to weights and biases
 		"""
-		
 		self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
 		self.biases += bscale * np.random.randn(self.biases.size)
 	
@@ -45,6 +44,7 @@ class Layer():
 		"""
 		Sets all weights and biases to zero
 		"""
+		logger.debug("Setting all layer parameters to zero...")
 		self.weights *= 0.0
 		self.biases *= 0.0
 	
@@ -71,9 +71,8 @@ class Layer():
 	
 	def run(self, inputs):
 		"""
-		Computes output from input, as "numpyly" as possible, using only np.dot (given that
-		np.tensordot seems not available for masked arrays, but we do want this to run on masked
-		arrays when dealing with multiple realizations).
+		Computes output from input, as "numpyly" as possible, using only np.dot (note that np.ma.dot does not
+		work with 3D masked arrays, and np.tensordot seems not available for masked arrays.
 		This means that np.dot determines the order of indices, as following.
 		
 		If inputs is 1D,
@@ -104,8 +103,11 @@ class Layer():
 			# self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1)))
 			# ... gives ouput indices (neuron, realization, galaxy)
 			# We need to change the order of those indices:
-				
+			
 			return np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
+		
+			# Note that np.ma.dot does not work for 3D arrays!
+			# We do not care about masks at all here, just compute assuming nothing is masked.
 		
 		else:
 			raise RuntimeError("Input shape error")
