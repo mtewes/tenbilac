@@ -24,6 +24,8 @@ class Normer:
 	This works with inputs (3D or 2D) and outputs or targets (2D), with indices
 	(realization, feature, galaxy) or (feature, galaxy).
 	
+	All methods correctly work with masked arrays.
+	
 	"""
 
 	def __init__(self, x, type="01"):
@@ -33,32 +35,44 @@ class Normer:
 
 		self.type = type
 		
-		x = np.asfarray(x)
+		if isinstance(x, np.ma.MaskedArray):
+			logger.info("Building Normer with a masked array of shape {0} and {1} masked values".format(str(x.shape), np.sum(x.mask)))
+			#np.ma.set_fill_value(x, 1.e20) # To notice things if the array gets filled by error.
+		elif isinstance(x, np.ndarray):
+			logger.info("Building Normer with an unmasked array of shape {0}".format((x.shape)))
+		else:
+			raise ValueError("x is not a numpy array")
+		
 		if x.ndim not in (2, 3):
 			raise ValueError("Cannot handle this array shape")
+			
+		if x.shape[-2] > 100: # This is the number of features
+			raise RuntimeError("Looks like you have more than 100 features or labels, this is probably a array format error !")
 			
 		if type in ["01", "-11"]:
 		
 			if x.ndim == 3:# If we have several realizations:
-				min = np.min(np.min(x, axis=0), axis=1) # Computes the min along the first and thrid axis.
-				dist = np.max(np.max(x, axis=0), axis=1) - min
+				mins = np.min(np.min(x, axis=0), axis=1) # Computes the min along the first and thrid axis.
+				dists = np.max(np.max(x, axis=0), axis=1) - mins
+				
+				# All these np.min, np.max, np.mean, np.std work as expected also with masked arrays.
 			elif x.ndim == 2:
-				min = np.min(x, axis=1) # Only along the second axes (i.e., "galaxies")
-				dist = np.max(x, axis=1) - min
+				mins = np.min(x, axis=1) # Only along the second axes (i.e., "galaxies")
+				dists = np.max(x, axis=1) - mins
 							
-			self.a = min
-			self.b = dist
+			self.a = mins
+			self.b = dists
 				
 		elif type == "std":
 			
 			if x.ndim == 3: # Use rollaxis to reshape array ?
 				raise ValueError("Not yet implemented")
 				
-			avg = np.mean(x, axis=1) # Along galaxies
-			std = np.std(x, axis=1)
+			avgs = np.mean(x, axis=1) # Along galaxies
+			stds = np.std(x, axis=1)
 						
-			self.a = avg
-			self.b = std
+			self.a = avgs
+			self.b = stds
 			
 		else:
 			raise RuntimeError("Unknown Normer type")		
@@ -74,19 +88,19 @@ class Normer:
 		"""
 		Returns the normalized data.
 		"""
-		res = np.asfarray(x)
-		if res.ndim not in (2, 3):
+		
+		if x.ndim not in (2, 3):
 			raise ValueError("Cannot handle this array shape")
 
 		assert self.a.ndim == 1
 		assert self.b.ndim == 1
 		
-		if res.shape[-2] != self.a.shape[0]:
+		if x.shape[-2] != self.a.shape[0]:
 			raise RuntimeError("Number of features does not match!")
 			
-		atiled = np.tile(self.a.reshape(self.a.size, 1), (1, res.shape[-1]))
-		btiled = np.tile(self.b.reshape(self.b.size, 1), (1, res.shape[-1]))			
-		res = (res - atiled) / btiled
+		atiled = np.tile(self.a.reshape(self.a.size, 1), (1, x.shape[-1]))
+		btiled = np.tile(self.b.reshape(self.b.size, 1), (1, x.shape[-1]))			
+		res = (x - atiled) / btiled
 					
 		if self.type == "-11":
 			res = 2.0*res - 1.0
@@ -97,15 +111,17 @@ class Normer:
 		"""
 		Denorms the data
 		"""
-		res = np.asfarray(x)
-		if res.ndim not in (2, 3):
+		
+		if x.ndim not in (2, 3):
 			raise ValueError("Cannot handle this array shape")
 
 		assert self.a.ndim == 1
 		assert self.b.ndim == 1
 		
 		if self.type == "-11":
-			res = (res + 1.0) / 2.0
+			res = (x + 1.0) / 2.0
+		else:
+			res = x + 0.0
 
 		if res.shape[-2] != self.a.shape[0]:
 			raise RuntimeError("Number of features does not match!")
