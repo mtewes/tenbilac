@@ -35,7 +35,7 @@ class Tenbilac():
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
 		for (i, nh) in enumerate(self.nhs + [self.no]):
-				self.layers.append(layer.Layer(ni=self.arch[i], nn=nh, actfct=act.Sig(), name=str(i)))
+				self.layers.append(layer.Layer(ni=self.arch[i], nn=nh, actfct=act.Tanh(), name=str(i)))
 		# For the output layer, set id activation function:
 		self.layers[-1].actfct = act.Id()
 		
@@ -48,6 +48,8 @@ class Tenbilac():
 		self.optit = 0
 		self.optcall = 0
 		self.opterr = np.inf
+		
+		self.opterrs = []
 		
 		
 		logger.info("Built " + str(self))
@@ -64,10 +66,10 @@ class Tenbilac():
 		"""
 		Returns a text about the network parameters, useful for debugging.
 		"""
-		txt = ["="*80, str(self)]
+		txt = ["="*120, str(self)]
 		for l in self.layers:
 			txt.append(l.report())
-		txt.append("="*80)
+		txt.append("="*120)
 		return "\n".join(txt)
 
 	
@@ -135,9 +137,14 @@ class Tenbilac():
 		
 		for l in self.layers:
 			l.zero() # Sets everything to zero
-			l.weights[0, 0] = 1.0 # Now we set selected weights to 1.0 (leaving biases at 0.0)
-			# more here...
-		
+			if l.nn < self.no or self.ni < self.no:
+				raise RuntimeError("Network is too small for setting identity!")
+			
+		for io in range(self.no):
+			for l in self.layers:
+				l.weights[io, io] = 1.0 # Now we set selected weights to 1.0 (leaving biases at 0.0)
+			
+			
 
 	def run(self, inputs):
 		"""
@@ -213,6 +220,8 @@ class Tenbilac():
 		else:
 			outputsmask = None
 		
+		assert type(inputs) == np.ndarray
+		
 		# Preparing stuff used by the callback function to save progress:
 		if itersavefilepath != None:
 			self.tmpitersavefilepath = itersavefilepath
@@ -234,8 +243,10 @@ class Tenbilac():
 				err = errfct(np.ma.array(outputs, mask=outputsmask), targets)
 			self.opterr = err
 			self.optcall += 1
+			self.opterrs.append(err)
+			
 			if verbose:
-				logger.debug("Call number {self.optcall:8d}: cost = {self.opterr:.8e}".format(self=self))
+				logger.debug("Iteration {self.optit:4d}, call number {self.optcall:8d}: cost = {self.opterr:.8e}".format(self=self))
 				logger.debug("\n" + self.report())
 			return err
 		
@@ -243,13 +254,33 @@ class Tenbilac():
 		optres = scipy.optimize.fmin_bfgs(
 			cost, params,
 			fprime=None,
-			maxiter=maxiter, gtol=1e-05,
+			maxiter=maxiter, gtol=1e-06,
 			full_output=True, disp=True, retall=True, callback=self.optcallback)
 		"""
+		
 		optres = scipy.optimize.fmin_powell(
 			cost, params,
-			maxiter=maxiter, ftol=1e-05,
+			maxiter=maxiter, ftol=1e-06,
 			full_output=True, disp=True, retall=True, callback=self.optcallback)
+		
+		"""
+		optres = scipy.optimize.fmin(
+			cost, params,
+			xtol=0.0001, ftol=0.0001, maxiter=maxiter, maxfun=None,
+			full_output=True, disp=True, retall=True, callback=self.optcallback)
+		"""
+		"""
+		optres = scipy.optimize.minimize(
+			cost, params, method="Anneal",
+			jac=None, hess=None, hessp=None, bounds=None, constraints=(),
+			tol=None, callback=self.optcallback, options={"maxiter":maxiter, "disp":True})
+		"""
+		"""
+		optres = scipy.optimize.basinhopping(
+			cost, params, 
+			niter=maxiter, T=0.001, stepsize=1.0, minimizer_kwargs=None, take_step=None, accept_test=None,
+			callback=self.optcallback, interval=50, disp=True, niter_success=None)
+		"""
 		
 		
 		#print optres
