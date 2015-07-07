@@ -28,7 +28,7 @@ class Normer:
 	
 	"""
 
-	def __init__(self, x, type="01"):
+	def __init__(self, x, type="-11"):
 		"""
 		Does *not* normalize anything, just determines the normalization parameters!
 		"""
