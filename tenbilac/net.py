@@ -87,30 +87,49 @@ class Tenbilac():
 		return sum([l.nparams() for l in self.layers])
 		
 	
-	def get_params_ref(self):
+	def get_params_ref(self, schema=2):
 		"""
 		Get a single 1D numpy array containing references to all network weights and biases.
+		Note that each time you call this, you loose the "connection" to the ref from any previous calls.
 		
-		Note that each time you call this, you loose the "connection" to any previous calls.
+		:param schema: different ways to arrange the weights and biases in the output array.
 		
-		To do: fix this, a simple view should do it.
-		
-		We use the fact that slicing an array returns a view of it.
 		"""
 		
 		ref = np.empty(self.nparams())
 		ind = 0
-		for l in self.layers:
 		
-			ref[ind:ind+(l.nn*l.ni)] = l.weights.flatten() # makes a copy
-			ref[ind+(l.nn*l.ni):ind+l.nparams()] = l.biases.flatten() # makes a copy
-			l.weights = ref[ind:ind+(l.nn*l.ni)].reshape(l.nn, l.ni) # a view
-			l.biases = ref[ind+(l.nn*l.ni):ind+l.nparams()] # a view
+		if schema == 1: # First layer first, weights and biases.
+		
+			for l in self.layers:
+				ref[ind:ind+(l.nn*l.ni)] = l.weights.flatten() # makes a copy
+				ref[ind+(l.nn*l.ni):ind+l.nparams()] = l.biases.flatten() # makes a copy
+				l.weights = ref[ind:ind+(l.nn*l.ni)].reshape(l.nn, l.ni) # a view
+				l.biases = ref[ind+(l.nn*l.ni):ind+l.nparams()] # a view
+				ind += l.nparams()
+		
+		elif schema == 2: # Starting at the end, biases before weights
+		
+			for l in self.layers[::-1]:
 			
-			ind += l.nparams()
+				ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
+				ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
+				l.biases = ref[ind:ind+l.nn] # a view
+				l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
+				ind += l.nparams()
 			
+		else:
+			raise ValueError("Unknown schema")
+			
+		
+		# Note that such tricks do not work, as indexing by indices creates copies:
+		#indices = np.arange(self.nparams())
+		#np.random.shuffle(indices)
+		#return ref[indices]
+
 		assert ref.size == self.nparams()
 		return ref
+
 
 
 	def addnoise(self, **kwargs):
@@ -231,7 +250,7 @@ class Tenbilac():
 			self.tmpitersavefilepath = None
 		
 	
-		params = self.get_params_ref()
+		params = self.get_params_ref(schema=2)
 		
 		
 		def cost(p):
@@ -250,19 +269,19 @@ class Tenbilac():
 				logger.debug("\n" + self.report())
 			return err
 		
-		"""
+		
 		optres = scipy.optimize.fmin_bfgs(
 			cost, params,
 			fprime=None,
-			maxiter=maxiter, gtol=1e-06,
+			maxiter=maxiter, gtol=1e-08,
 			full_output=True, disp=True, retall=True, callback=self.optcallback)
-		"""
 		
+		"""
 		optres = scipy.optimize.fmin_powell(
 			cost, params,
 			maxiter=maxiter, ftol=1e-06,
 			full_output=True, disp=True, retall=True, callback=self.optcallback)
-		
+		"""
 		"""
 		optres = scipy.optimize.fmin(
 			cost, params,
@@ -275,6 +294,7 @@ class Tenbilac():
 			jac=None, hess=None, hessp=None, bounds=None, constraints=(),
 			tol=None, callback=self.optcallback, options={"maxiter":maxiter, "disp":True})
 		"""
+		
 		"""
 		optres = scipy.optimize.basinhopping(
 			cost, params, 
