@@ -11,6 +11,6 @@ logging.basicConfig(level=logging.INFO)
 
 net = tenbilac.net.Tenbilac(1, [5])
 net.addnoise()
-net.train(normobs, normparams, tenbilac.err.msb, maxiter=200)
+net.train(normobs, normparams, tenbilac.err.msb, maxiter=100)
 net.save("net_msb.pkl")
 

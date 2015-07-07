@@ -13,6 +13,6 @@ normobs = np.mean(normobs, axis=0).reshape(1, 1, n)
 
 net = tenbilac.net.Tenbilac(1, [5])
 net.addnoise()
-net.train(normobs, normparams, tenbilac.err.mse, maxiter=200)
+net.train(normobs, normparams, tenbilac.err.mse, maxiter=100)
 net.save("net_avg.pkl")
 
