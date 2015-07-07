@@ -45,11 +45,13 @@ class Tenbilac():
 		
 		
 		# We initialize some counters for the optimization:
-		self.optit = 0
-		self.optcall = 0
-		self.opterr = np.inf
+		self.optit = 0 # The iteration counter
+		self.optcall = 0 # The cost function call counter
+		self.opterr = np.inf # The current cost function value
 		
-		self.opterrs = []
+		self.opterrs = [] # The cost function value at each call
+		self.optiterrs = [] # The cost function value at each iteration
+		self.optitcalls = [] # The cost function call counter at each iteration
 		
 		
 		logger.info("Built " + str(self))
@@ -180,10 +182,15 @@ class Tenbilac():
 	
 	def optcallback(self, *args):
 		"""
-		Function called by the optimizer to print out some info about the training progress
+		Function called by the optimizer after each "iteration".
+		Print out some info about the training progress,
+		saves status of the counters,
+		and optionally writes the network itself to disk.
 		"""
 		#print args
 		self.optit += 1
+		self.optiterrs.append(self.opterr)
+		self.optitcalls.append(self.optcall)
 		logger.info("Training iteration {self.optit:4d}, cost = {self.opterr:.8e}".format(self=self))
 		if self.tmpitersavefilepath != None:
 			self.save(self.tmpitersavefilepath)
@@ -307,7 +314,7 @@ class Tenbilac():
 		if len(optres) == 8:
 			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag, allvecs) = optres
 			
-			finalerror = f(xopt) # Is it important to do this, to set the optimal parameters?
+			finalerror = cost(xopt) # Is it important to do this, to set the optimal parameters?
 			
 			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
 			
