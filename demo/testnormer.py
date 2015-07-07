@@ -13,18 +13,18 @@ no = 1
 noise_scale = 1.0
 
 # 3D case:
-input = np.random.randn(ni * ngal * nrea).reshape((nrea, ni, ngal))*1000.0 + 15.0
+inputs = np.random.randn(ni * ngal * nrea).reshape((nrea, ni, ngal))*1000.0 + 15.0
 
 # 2D case:
 #input = np.random.randn(ni * ngal).reshape((ni, ngal))*1000.0 + 15.0
 
 
-print input
-print input.shape
+print inputs
+print inputs.shape
 
-normer = tenbilac.utils.Normer(input, type="01")
+normer = tenbilac.utils.Normer(inputs, type="01")
 
-normed = normer(input)
+normed = normer(inputs)
 
 print normed
 
@@ -32,7 +32,7 @@ print np.min(normed), np.max(normed)
 
 denormed = normer.denorm(normed)
 
-if not np.allclose(denormed, input):
+if not np.allclose(denormed, inputs):
 	raise RuntimeError("Comparision test failed !")
 else:
 	print "Test is good!"
