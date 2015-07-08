@@ -134,6 +134,61 @@ class Normer:
 
 
 
+def demask(data, no=1):
+	"""
+	Function that "splits" a potentially masked input 3D array into unmasked input and some appropriate mask
+	that can be applied to the output.
+	This allows us to write the neural network itself as if no data was masked, as long as the cost function
+	is aware of the mask.
+	
+	The whole point: if any feature of a realization is maksed,
+	the full realization should be disregarded.
+	
+	:param data: 3D numpy array (rea, feature, case), typically input for training or prediction.
+	:param no: The number of outputs of the network (only used to properly format the returned mask).
+	
+	:returns: a tuple (filleddata, outputsmask), where filledata has exactly the same shape as data,
+		and outputsmask is 3D but with only "no" feature dimensions (rea, =no, case)
+		If the input data is not masked, the returned outputsmask is "None".
+	
+	"""
+	assert data.ndim == 3
+	
+	if isinstance(data, np.ma.MaskedArray):
+			
+		assert data.mask.ndim == 3
+		
+		outputsmask = np.any(data.mask, axis=1) # This is 2D (rea, gal)
+		
+		# Let's also compute a mask for galaxies, just to see how many are affected:
+		galmask = np.any(outputsmask, axis=0) # This is 1D (gal)
+		galmaskall = np.all(outputsmask, axis=0) # This is 1D (gal)
+			
+		txt = []
+			
+		txt.append("In total {0} realizations ({1:.2%}) will be disregarded due to {2} masked features.".format(np.sum(outputsmask), float(np.sum(outputsmask))/float(outputsmask.size), np.sum(data.mask)))
+		txt.append("This affects {0} ({1:.2%}) of the {2} cases,".format(np.sum(galmask), float(np.sum(galmask))/float(galmask.size), galmask.size))
+		txt.append("and {0} ({1:.2%}) of the cases have no useable realizations at all.".format(np.sum(galmaskall), float(np.sum(galmaskall))/float(galmaskall.size)))
+			
+		logger.info(" ".join(txt))
+			
+		# Now we inflate this outputsmask to make it 3D (rea, label, gal)
+		# Values are the same for all labels, but this is required for easy use in the error functions.
+		outputsmask = np.swapaxes(np.tile(outputsmask, (no, 1, 1)), 0, 1)
+			
+		filleddata = data.filled(fill_value=0.0) # Gives us a plain ndarray without mask.
+		assert type(filleddata) == np.ndarray
+			
+	else:
+		assert type(data) == np.ndarray
+		logger.info("The data has no mask, so nothing to demask...")
+		filleddata = data
+		outputsmask = None
+	
+	return (filleddata, outputsmask)
+	
+	
+
 
 def writepickle(obj, filepath, protocol = -1):
 	"""
