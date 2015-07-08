@@ -3,11 +3,11 @@ Tenbilac
 
 - You have noisy multidimensional data, which depends on some physical parameters.
 - Given this data, you want to get *accurate* estimates for the physical parameters.
-- It seems hard or impossible to write down any likelihood function for your data, say because the measurement process is so involved.
-- But you are able to simulate the data rather well, given the parameters.
+- It seems hard or impossible to write down any likelihood function for your data, say because the measurement process is very involved.
+- But you are able to simulate the data rather easily, given the parameters.
 
 Then Tenbilac gives you an extremely fast and fully empirical point or interval estimator for the parameters, tuned to minimize bias, no matter how crazy the noise in your data is.
-**Fundamental, isn't it ?**
+*Fundamental, isn't it ?*
 
 .. image:: https://raw.githubusercontent.com/mtewes/tenbilac/master/sphinx/_static/tenbilac.png
 	:align: center
