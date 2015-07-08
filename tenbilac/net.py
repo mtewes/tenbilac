@@ -263,7 +263,7 @@ class Tenbilac():
 		def cost(p):
 			params[:] = p
 			outputs = self.run(inputs) # This is not a masked array!
-			if outputsmask == None:
+			if outputsmask is None:
 				err = errfct(outputs, targets)
 			else:
 				err = errfct(np.ma.array(outputs, mask=outputsmask), targets)
