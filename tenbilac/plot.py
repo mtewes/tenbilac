@@ -76,6 +76,41 @@ def errorcurve(net, filepath=None):
 
 	
 	
+def paramscurve(net, filepath=None):
+	"""
+	Visualization of the evolution of the network parameters
+	
+	"""
+	
+	fig = plt.figure(figsize=(10, 10))
+	
+	
+	optparams = np.array(net.optitparams)
+	opterrs = net.optiterrs
+	optits = np.arange(len(net.optiterrs)) + 1
+	
+	ax = plt.subplot(2, 1, 1)
+	ax.plot(optits, opterrs)
+	ax.set_yscale('log')
+	ax.set_xlabel("Iteration")
+	ax.set_ylabel("Cost function value ({0})".format(net.errfctname))
+	
+	ax = plt.subplot(2, 1, 2)
+	assert optparams.shape[1] == net.nparams()
+	for paramindex in range(net.nparams()):
+		ax.plot(optits, optparams[:,paramindex])
+	ax.set_xlabel("Iteration")
+	ax.set_ylabel("Network parameter value")
+	
+	plt.tight_layout()
+	plt.show()	
+
+
+	
+	
+	
+	
+	
 	
 	
 	
