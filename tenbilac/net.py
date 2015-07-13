@@ -8,16 +8,17 @@ import scipy.optimize
 import logging
 logger = logging.getLogger(__name__)
 
-from . import act
 from . import layer
 from . import utils
+from . import err
+from . import act
 
 class Tenbilac():
 	"""
 	Object representing a network made out of one or several hidden layers.
 	"""
 	
-	def __init__(self, ni, nhs, no=1, onlyid=False):
+	def __init__(self, ni, nhs, no=1, onlyid=False, actfct="tanh"):
 		"""
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
@@ -32,17 +33,17 @@ class Tenbilac():
 		self.no = no
 		self.arch = np.array([self.ni]+self.nhs+[self.no])
 		
+		actfct = eval("act.{0}".format(actfct)) # We turn the string actfct option into an actual function
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
 		for (i, nh) in enumerate(self.nhs + [self.no]):
-				self.layers.append(layer.Layer(ni=self.arch[i], nn=nh, actfct=act.Tanh(), name=str(i)))
+				self.layers.append(layer.Layer(ni=self.arch[i], nn=nh, actfct=actfct, name=str(i)))
 		# For the output layer, set id activation function:
-		self.layers[-1].actfct = act.Id()
+		self.layers[-1].actfct = act.iden
 		
 		if onlyid: # Then all layers get the Id activation function:
 			for l in self.layers:
-				l.actfct = act.Id()
-		
+				l.actfct = act.iden
 		
 		# We initialize some counters for the optimization:
 		self.optit = 0 # The iteration counter
@@ -193,13 +194,13 @@ class Tenbilac():
 		self.optit += 1
 		self.optiterrs.append(self.opterr)
 		self.optitcalls.append(self.optcall)
-		logger.info("Training iteration {self.optit:4d}, cost = {self.opterr:.8e}".format(self=self))
+		logger.info("Training iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}".format(self=self))
 		if self.tmpitersavefilepath != None:
 			self.save(self.tmpitersavefilepath)
 		
 	
 	
-	def train(self, inputs, targets, errfct, maxiter=100, itersavefilepath=None, verbose=True):
+	def train(self, inputs, targets, errfct="msrb", maxiter=100, itersavefilepath=None, verbose=True):
 		"""
 		Black-box training to minimize the given errfct.
 		
@@ -229,8 +230,13 @@ class Tenbilac():
 			self.save(self.tmpitersavefilepath)
 		else:
 			self.tmpitersavefilepath = None
+		self.errfctname = errfct
 		
 		params = self.get_params_ref(schema=2)
+		
+		# The error fuction
+		errfct = eval("err.{0}".format(errfct)) # Turning a string into the actual function
+		logger.info("Selected cost function: '{0}'".format(errfct.__name__))
 		
 		
 		def cost(p):

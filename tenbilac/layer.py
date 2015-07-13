@@ -16,7 +16,7 @@ from . import act
 
 		
 class Layer():	
-	def __init__(self, ni, nn, actfct=act.Sig, name="None"):
+	def __init__(self, ni, nn, actfct=act.tanh, name="None"):
 		
 		"""
 		:param ni: Number of inputs
@@ -58,7 +58,7 @@ class Layer():
 		txt.append("Layer '{name}':".format(name=self.name))
 		for inn in range(self.nn):
 			txt.append("    output {inn} = {act} ( input * {weights} + {bias} )".format(
-				inn=inn, act=self.actfct.__class__.__name__, weights=self.weights[inn,:], bias=self.biases[inn]))
+				inn=inn, act=self.actfct.__name__, weights=self.weights[inn,:], bias=self.biases[inn]))
 		return "\n".join(txt)
 	
 	
