@@ -52,6 +52,7 @@ class Tenbilac():
 		
 		self.opterrs = [] # The cost function value at each call
 		self.optiterrs = [] # The cost function value at each iteration
+		self.optitparams = [] # A copy of the network parameters at each iteration
 		self.optitcalls = [] # The cost function call counter at each iteration
 		
 		
@@ -191,9 +192,12 @@ class Tenbilac():
 		and optionally writes the network itself to disk.
 		"""
 		#print args
+		#exit()
+		
 		self.optit += 1
 		self.optiterrs.append(self.opterr)
 		self.optitcalls.append(self.optcall)
+		self.optitparams.append(args[0])
 		logger.info("Training iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}".format(self=self))
 		if self.tmpitersavefilepath != None:
 			self.save(self.tmpitersavefilepath)
