@@ -1,5 +1,6 @@
 """
 Error functions
+These should work both on unmasked and on masked arrays "as expected".
 """
 
 import numpy as np
@@ -14,30 +15,50 @@ def msb(predictions, targets):
 	"""
 	Mean square bias
 	
-	:param predictions: 3D array (realization, neuron, galaxy)
+	:param predictions: 3D array (realization, neuron, galaxy), should be appropiratedly masked (thus not directly the output of the net)
 	:param targets: 2D array (neuron, galaxy)
-	
-	:param outputsmask: 3D array (realization, label, galaxy)
 	
 	"""
 	
 	if predictions.ndim == 3:
 	
+		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy)
+		return np.mean(np.square(biases))
+	
+	else:
+		raise ValueError("Wrong pred shape")
+
+
+	
+def msrb(predictions, targets):
+	"""
+	Mean square relative bias
+	
+	:param predictions: 3D array (realization, neuron, galaxy), should be appropiratedly masked (thus not directly the output of the net)
+	:param targets: 2D array (neuron, galaxy)
+	
+	"""
+	
+	if predictions.ndim == 3:
+	
+		#assert type(predictions) == np.ma.MaskedArray
+		# Just as a test that this was not forgotten, no real need here.
+		# No need, for this, for sure it also works without masks...
+		
+		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy)
+		stds = np.std(predictions, axis=0) # Same shape
 		
 		if type(predictions) == np.ma.MaskedArray:
-		
-			biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy)
-		
-			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0)
-			
-			# Todo: implement weights !
-			
-			return np.mean(np.square(biases))
-	
+			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0) + 0.0 # Number of realizations, 0.0 makes this floats
+		elif type(predictions) == np.ndarray:
+			reacounts = predictions.shape[0] + 0.0
 		else:
-			biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy)
-			return np.mean(np.square(biases))
+			raise RuntimeError("Type error in predictions.")
 		
+		errsonbiases = stds / np.sqrt(reacounts)
+		relativebiases = biases / errsonbiases
+		
+		return np.mean(np.square(relativebiases))
 		
 	
 	else:
