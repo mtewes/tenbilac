@@ -41,7 +41,7 @@ def checkdata(data, filepath=None):
 
 
 
-def errorcurve(net, filepath=None):
+def errorcurve(train, filepath=None):
 	"""
 	Simple plot of the error curve generated during the training of a network
 	
@@ -51,14 +51,14 @@ def errorcurve(net, filepath=None):
 
 	
 	# The cost function calls:
-	opterrs = np.array(net.opterrs)
-	optcalls = np.arange(len(net.opterrs)) + 1
+	opterrs = np.array(train.opterrs)
+	optcalls = np.arange(len(train.opterrs)) + 1
 	plt.plot(optcalls, opterrs, "r-")
 	
 	# The "iterations":
-	optiterrs = np.array(net.optiterrs)
-	optitcalls = np.array(net.optitcalls)
-	optits = np.arange(len(net.optiterrs)) + 1
+	optiterrs = np.array(train.optiterrs)
+	optitcalls = np.array(train.optitcalls)
+	optits = np.arange(len(train.optiterrs)) + 1
 	
 	plt.plot(optitcalls, optiterrs, "b.")
 	ax = plt.gca()
@@ -76,28 +76,28 @@ def errorcurve(net, filepath=None):
 
 	
 	
-def paramscurve(net, filepath=None):
+def paramscurve(train, filepath=None):
 	"""
-	Visualization of the evolution of the network parameters
+	Visualization of the evolution of the network parameters during the training
 	
 	"""
 	
 	fig = plt.figure(figsize=(10, 10))
 	
 	
-	optparams = np.array(net.optitparams)
-	opterrs = net.optiterrs
-	optits = np.arange(len(net.optiterrs)) + 1
+	optparams = np.array(train.optitparams)
+	opterrs = train.optiterrs
+	optits = np.arange(len(train.optiterrs)) + 1
 	
 	ax = plt.subplot(2, 1, 1)
 	ax.plot(optits, opterrs)
 	ax.set_yscale('log')
 	ax.set_xlabel("Iteration")
-	ax.set_ylabel("Cost function value ({0})".format(net.errfctname))
+	ax.set_ylabel("Cost function value ({0})".format(train.errfctname))
 	
 	ax = plt.subplot(2, 1, 2)
-	assert optparams.shape[1] == net.nparams()
-	for paramindex in range(net.nparams()):
+	assert optparams.shape[1] == train.net.nparams()
+	for paramindex in range(train.net.nparams()):
 		ax.plot(optits, optparams[:,paramindex])
 	ax.set_xlabel("Iteration")
 	ax.set_ylabel("Network parameter value")

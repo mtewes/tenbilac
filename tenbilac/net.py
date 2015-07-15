@@ -4,6 +4,7 @@ This is Tenbilac!
 
 import numpy as np
 import scipy.optimize
+from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -44,18 +45,7 @@ class Tenbilac():
 		if onlyid: # Then all layers get the Id activation function:
 			for l in self.layers:
 				l.actfct = act.iden
-		
-		# We initialize some counters for the optimization:
-		self.optit = 0 # The iteration counter
-		self.optcall = 0 # The cost function call counter
-		self.opterr = np.inf # The current cost function value
-		
-		self.opterrs = [] # The cost function value at each call
-		self.optiterrs = [] # The cost function value at each iteration
-		self.optitparams = [] # A copy of the network parameters at each iteration
-		self.optitcalls = [] # The cost function call counter at each iteration
-		
-		
+				
 		logger.info("Built " + str(self))
 
 	
@@ -183,129 +173,6 @@ class Tenbilac():
 		return output
 	
 			
-	
-	def optcallback(self, *args):
-		"""
-		Function called by the optimizer after each "iteration".
-		Print out some info about the training progress,
-		saves status of the counters,
-		and optionally writes the network itself to disk.
-		"""
-		#print args
-		#exit()
-		
-		self.optit += 1
-		self.optiterrs.append(self.opterr)
-		self.optitcalls.append(self.optcall)
-		self.optitparams.append(args[0])
-		logger.info("Training iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}".format(self=self))
-		if self.tmpitersavefilepath != None:
-			self.save(self.tmpitersavefilepath)
-		
-	
-	
-	def train(self, inputs, targets, errfct="msrb", maxiter=100, itersavefilepath=None, verbose=True):
-		"""
-		Black-box training to minimize the given errfct.
-		
-		:param itersavefilepath: Path to save the network at each optimization callback.
-		:type itersavefilepath: string
-		
-		"""
-			
-		logger.info("Starting training with input = {intype} of shape {inshape} and targets = {tartype} of shape {tarshape}".format(
-			intype=str(type(inputs)), inshape=str(inputs.shape), tartype=str(type(targets)), tarshape=str(targets.shape)))
-	
-		if inputs.ndim != 3 and targets.ndim != 2:
-			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
-		
-		assert type(targets) == np.ndarray # This should not be masked
-		
-		# We will "run" the network without paying attention to the masks.
-		# Instead, we now manually generate a mask for the ouputs, so that the errorfunction can disregard the masked realizations.
-		# Indeed all this masking stays the same for given training data, no need to compute this at every iteration...
-		
-		(inputs, outputsmask) = utils.demask(inputs, no=self.no)
-				
-		# Preparing stuff used by the callback function to save progress:
-		if itersavefilepath != None:
-			self.tmpitersavefilepath = itersavefilepath
-			# And let's test this out before we start, so that it fails fast in case of a problem:
-			self.save(self.tmpitersavefilepath)
-		else:
-			self.tmpitersavefilepath = None
-		self.errfctname = errfct
-		
-		params = self.get_params_ref(schema=2)
-		
-		# The error fuction
-		errfct = eval("err.{0}".format(errfct)) # Turning a string into the actual function
-		logger.info("Selected cost function: '{0}'".format(errfct.__name__))
-		
-		
-		def cost(p):
-			params[:] = p
-			outputs = self.run(inputs) # This is not a masked array!
-			if outputsmask is None:
-				err = errfct(outputs, targets)
-			else:
-				err = errfct(np.ma.array(outputs, mask=outputsmask), targets)
-			self.opterr = err
-			self.optcall += 1
-			self.opterrs.append(err)
-			
-			if verbose:
-				logger.debug("Iteration {self.optit:4d}, call number {self.optcall:8d}: cost = {self.opterr:.8e}".format(self=self))
-				logger.debug("\n" + self.report())
-			return err
-		
-		
-		optres = scipy.optimize.fmin_bfgs(
-			cost, params,
-			fprime=None,
-			maxiter=maxiter, gtol=1e-08,
-			full_output=True, disp=True, retall=True, callback=self.optcallback)
-		
-		"""
-		optres = scipy.optimize.fmin_powell(
-			cost, params,
-			maxiter=maxiter, ftol=1e-06,
-			full_output=True, disp=True, retall=True, callback=self.optcallback)
-		"""
-		"""
-		optres = scipy.optimize.fmin(
-			cost, params,
-			xtol=0.0001, ftol=0.0001, maxiter=maxiter, maxfun=None,
-			full_output=True, disp=True, retall=True, callback=self.optcallback)
-		"""
-		"""
-		optres = scipy.optimize.minimize(
-			cost, params, method="Anneal",
-			jac=None, hess=None, hessp=None, bounds=None, constraints=(),
-			tol=None, callback=self.optcallback, options={"maxiter":maxiter, "disp":True})
-		"""
-		
-		"""
-		optres = scipy.optimize.basinhopping(
-			cost, params, 
-			niter=maxiter, T=0.001, stepsize=1.0, minimizer_kwargs=None, take_step=None, accept_test=None,
-			callback=self.optcallback, interval=50, disp=True, niter_success=None)
-		"""
-		
-		
-		#print optres
-		if len(optres) == 8:
-			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag, allvecs) = optres
-			
-			finalerror = cost(xopt) # Is it important to do this, to set the optimal parameters?
-			
-			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
-			
-		else:
-			logger.warning("Optimization output is fishy")
-	
-		
-	
 	
 	def predict(self, inputs):
 		"""
