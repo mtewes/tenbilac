@@ -59,6 +59,7 @@ class Training:
 		# We initialize some counters for the optimization:
 		self.optit = 0 # The iteration counter
 		self.optcall = 0 # The cost function call counter
+		self.optitcall = 0 # Idem, but gets reset at each new iteration
 		self.opterr = np.inf # The current cost function value
 		
 		self.opterrs = [] # The cost function value at each call
@@ -133,7 +134,22 @@ class Training:
 		"""
 		
 		
-
+	def start(self):
+		"""
+		Called a the beginning of a training 
+		"""
+		self.testcost()
+		self.iterationstarttime = datetime.now()
+		self.optitcall = 0
+		
+	
+	def end(self):
+		"""
+		Called at the end of a training
+		"""
+		self.optitcall = 0
+		logger.info("Total training time: {0:.2f} s".format(np.sum(self.optittimes)))
+		
 
 	def callback(self, *args):
 		"""
@@ -146,25 +162,29 @@ class Training:
 		#exit()
 		
 		self.optit += 1
-		self.optittimes.append(datetime.now())
+		now = datetime.now()
+		secondstaken = (now - self.iterationstarttime).total_seconds()
+		callstaken = self.optitcall 
+		
+		self.optittimes.append(secondstaken)
 		self.optiterrs.append(self.opterr)
 		self.optitcalls.append(self.optcall)
 		self.optitparams.append(args[0])
 		
-		if len(self.optittimes) > 1: # If it's not the first time callback is called:
-			secondstaken = (self.optittimes[-1] - self.optittimes[-2]).total_seconds()
-			callstaken = (self.optitcalls[-1] - self.optitcalls[-2])
-			logger.info("Iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}, took {time:.4f} s for {calls} calls ({avg:.4f} s per call)".format(self=self, time=secondstaken, calls=callstaken, avg=float(secondstaken)/float(callstaken)))
-		else:
-			logger.info("Iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}".format(self=self))
-	
+		callstaken = self.optitcall 
+		
+		logger.info("Iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}, took {time:.4f} s for {calls} calls ({avg:.4f} s per call)".format(self=self, time=secondstaken, calls=callstaken, avg=float(secondstaken)/float(callstaken)))
+		
+		
 		if self.itersavepath != None:
 			self.save(self.itersavepath)
-			
+		
+		# We reset the iteration counters:
+		self.iterationstarttime = now
+		self.optitcall = 0 
 			
 		# And now we take care of getting a new batch
 		#self.randombatch()
-		
 		
 		
 		
@@ -185,6 +205,7 @@ class Training:
 			
 		self.opterr = err
 		self.optcall += 1
+		self.optitcall += 1
 		self.opterrs.append(err)
 		
 		if self.verbose:
@@ -194,6 +215,10 @@ class Training:
 		return err
 
 
+	def currentcost(self):
+		return self.cost(p=self.params)
+
+
 	def testcost(self):
 		"""
 		Calls the cost function and logs some info.
@@ -201,7 +226,7 @@ class Training:
 		
 		logger.info("Testing cost function call...")
 		starttime = datetime.now()
-		err = self.cost(self.params)
+		err = self.currentcost()
 		endtime = datetime.now()
 		took = (endtime - starttime).total_seconds()
 		
@@ -211,22 +236,76 @@ class Training:
 
 	def bfgs(self, maxiter=100, gtol=1e-8):
 		
-		self.testcost()
+		self.start()
 		logger.info("Starting BFGS for {0} iterations (maximum)...".format(maxiter))
 		
 		optres = scipy.optimize.fmin_bfgs(
 			self.cost, self.params,
 			fprime=None,
 			maxiter=maxiter, gtol=gtol,
-			full_output=True, disp=True, retall=True, callback=self.callback)
+			full_output=True, disp=True, retall=False, callback=self.callback)
 		
-		if len(optres) == 8:
-			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag, allvecs) = optres
+		if len(optres) == 7:
+			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag) = optres
+			self.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
+			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
+		else:
+			logger.warning("Optimization output is fishy")
+		
+		self.end()
+	
+
+
+	def cg(self, maxiter):
+		
+		self.start()
+		logger.info("Starting CG for {0} iterations (maximum)...".format(maxiter))
+		
+		optres = scipy.optimize.fmin_cg(
+			self.cost, self.params,
+			fprime=None, gtol=1e-05,
+			maxiter=maxiter, full_output=True, disp=True, retall=False, callback=self.callback)
+			
+		if len(optres) == 5:
+			(xopt, fopt, func_calls, grad_calls, warnflag) = optres
 			self.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
 			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
 		else:
 			logger.warning("Optimization output is fishy")
 	
+		self.end()
+	
+
+
+
+
+
+#	def anneal(self, maxiter=100):
+#		
+#		self.testcost()
+#		logger.info("Starting annealing for {0} iterations (maximum)...".format(maxiter))
+#	
+#		optres = scipy.optimize.basinhopping(
+#			self.cost, self.params, 
+#			niter=maxiter, T=0.001, stepsize=0.1, minimizer_kwargs=None, take_step=None, accept_test=None,
+#			callback=self.callback, interval=100, disp=True, niter_success=None)
+#			
+#			# Warning : interval is not the callback interval, but the step size update interval.
+#
+#		print optres
+#		
+#		print len(optres)
+		
+#	def fmin(self, maxiter=100):	# One iteration per call
+#		self.testcost()
+#		logger.info("Starting fmin for {0} iterations (maximum)...".format(maxiter))
+#		
+#		optres = scipy.optimize.fmin(
+#			self.cost, self.params,
+#			xtol=0.0001, ftol=0.0001, maxiter=maxiter, maxfun=None,
+#			full_output=True, disp=True, retall=True, callback=self.callback)
+#		
+#		print optres
 
 	
 #		"""
