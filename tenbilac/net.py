@@ -19,7 +19,7 @@ class Tenbilac():
 	Object representing a network made out of one or several hidden layers.
 	"""
 	
-	def __init__(self, ni, nhs, no=1, onlyid=False, actfct="tanh"):
+	def __init__(self, ni, nhs, no=1, onlyid=False, actfct="tanh", name=None):
 		"""
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
@@ -27,20 +27,28 @@ class Tenbilac():
 		:param no: Number of ouput neurons
 		:param onlyid: Set this to true if you want identity activation functions on all layers
 			(useful for debugging).
+			
+			
+		:param name: if None, will be set automatically
+		:type name: string
+		
+		
 		"""
 	
 		self.ni = ni
 		self.nhs = nhs
 		self.no = no
-		self.arch = np.array([self.ni]+self.nhs+[self.no])
+		self.name = name
 		
+		iniarch = np.array([self.ni]+self.nhs+[self.no]) # Let's not save this. Layers might evolve dynamically.
+
 		actfct = eval("act.{0}".format(actfct)) # We turn the string actfct option into an actual function
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
-		for (i, nh) in enumerate(self.nhs + [self.no]):
-				self.layers.append(layer.Layer(ni=self.arch[i], nn=nh, actfct=actfct, name=str(i)))
-		# For the output layer, set id activation function:
-		self.layers[-1].actfct = act.iden
+		for (i, nh) in enumerate(self.nhs):
+				self.layers.append(layer.Layer(ni=iniarch[i], nn=nh, actfct=actfct, name="h"+str(i)))
+		# Adding the output layer:
+		self.layers.append(layer.Layer(ni=self.nhs[-1], nn=no, actfct=act.iden, name="o"))
 		
 		if onlyid: # Then all layers get the Id activation function:
 			for l in self.layers:
@@ -48,12 +56,23 @@ class Tenbilac():
 				
 		logger.info("Built " + str(self))
 
+
 	
 	def __str__(self):
 		"""
 		A short string describing the network
 		"""
-		return "Tenbilac with architecture {self.arch} and {nparams} params".format(self=self, nparams=self.nparams())
+		#return "Tenbilac with architecture {self.arch} and {nparams} params".format(self=self, nparams=self.nparams())
+		#archtxt = str(self.ni) + "|" + "|".join(["{n}/{actfct}".format(n=l.nn, actfct=l.actfct.__name__) for l in self.layers])
+		archtxt = str(self.ni) + "|" + "|".join(["{n}/{actfct}".format(n=l.nn, actfct=l.actfct.__name__) for l in self.layers])
+		#autotxt = "[{archtxt}]({nparams})".format(archtxt=archtxt, nparams=self.nparams())
+		autotxt = "[{archtxt}={nparams}]".format(archtxt=archtxt, nparams=self.nparams())
+		
+		if self.name is None:
+			return autotxt
+		else:
+			return "'name' {autotxt}".format(name=name, autotxt=autotxt)
+
 
 	
 	def report(self):
@@ -131,7 +150,7 @@ class Tenbilac():
 		Adds random noise to all parameters.
 		"""
 		
-		logger.debug("Adding noise to network parameters...")
+		logger.info("Adding noise to network parameters...")
 		
 		for l in self.layers:
 			l.addnoise(**kwargs)
@@ -146,8 +165,6 @@ class Tenbilac():
 		input feature is observed galaxy ellipticity g11, and first output is true g1.
 		"""
 
-		logger.info("Setting identity weights...")
-		
 		for l in self.layers:
 			l.zero() # Sets everything to zero
 			if l.nn < self.no or self.ni < self.no:
@@ -157,6 +174,7 @@ class Tenbilac():
 			for l in self.layers:
 				l.weights[io, io] = 1.0 # Now we set selected weights to 1.0 (leaving biases at 0.0)
 			
+		logger.info("Set identity weights")
 			
 
 	def run(self, inputs):
