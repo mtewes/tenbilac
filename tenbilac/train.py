@@ -22,15 +22,27 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, inputs, targets, errfctname="msrb", itersavepath=None, verbose=False):
+	def __init__(self, net, inputs, targets, valfrac=0.1, shuffle=True, errfctname="msrb", itersavepath=None, verbose=False, name=None):
 		"""
+		
+		
+		:param valfrac: Fraction of training data which should be used for the validation
+		
 		
 		Sets up
 		- inputs and targets (with respective masks)
 		- housekeeping lists
 		- error function
 		
+		
+		# Naming conventions:
+		fulltraininputs = the full training set
+		valinputs = the full validation set
+		traininputs = a potential "mini batch" subset of the full training set
+		
+		
 		"""
+
 		if inputs.ndim != 3 and targets.ndim != 2:
 			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
 		logger.info("Setting up the training with {ncases} cases and {nreas} realizations...".format(ncases=inputs.shape[2], nreas=inputs.shape[0]))
@@ -38,18 +50,71 @@ class Training:
 		#	intype=str(type(inputs)), inshape=str(inputs.shape), tartype=str(type(targets)), tarshape=str(targets.shape)))
 		
 		# The acutal net is an attribute of a training:
-		self.net = net
-		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
 		
+		self.net = net
+		self.name = name
+		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
+			
 		# We will "run" the network without paying attention to the masks.
 		# Instead, we now manually generate a mask for the ouputs, so that the errorfunction can disregard the masked realizations.
 		# Indeed all this masking stays the same for given training data, no need to compute this at every iteration...
 		
-		(self.fullinputs, self.fulloutputsmask) = utils.demask(inputs, no=self.net.no)
-		
+		(nomaskinputs, outputsmask) = utils.demask(inputs, no=self.net.no)
 		assert type(targets) == np.ndarray # This should not be masked
-		self.fulltargets = targets
 		
+		# Now we cut away part of this for validation purposes, and shuffle before doing so.
+		
+		ncases = inputs.shape[2]
+		nvalcases = int(valfrac * ncases)
+		if nvalcases <= 0:
+			raise RuntimeError("Please allow for some validation cases.")
+		ntraincases = ncases - nvalcases
+
+		if shuffle:
+			logger.info("Shuffling training data and selecting {nvalcases} among {ncases} cases for validation...".format(ncases=ncases, nvalcases=nvalcases))
+			caseindexes = np.arange(ncases)
+			np.random.shuffle(caseindexes)
+			trainindexes = caseindexes[0:ntraincases]
+			valindexes = caseindexes[ntraincases:ncases]
+			
+			self.fulltraininputs = nomaskinputs[:,:,trainindexes]
+			self.valinputs = nomaskinputs[:,:,valindexes]
+			self.fulltraintargets = targets[:,trainindexes]
+			self.valtargets = targets[:,valindexes]
+			
+			if outputsmask is None:
+				self.fulltrainoutputsmask = None
+				self.valoutputsmask = None
+			else:
+				self.fulltrainoutputsmask = outputsmask[:,:,trainindexes]
+				self.valoutputsmask = outputsmask[:,:,valindexes]
+				
+			
+		else: # then we just slice the arrays:
+			
+			self.fulltraininputs = nomaskinputs[:,:,0:ntraincases]
+			self.valinputs = nomaskinputs[:,:,ntraincases:ncases]
+			self.fulltraintargets = targets[:,0:ntraincases]
+			self.valtargets = targets[:,ntraincases:ncases]
+			
+			if outputsmask is None:
+				self.fulltrainoutputsmask = None
+				self.valoutputsmask = None
+			else:
+				self.fulltrainoutputsmask = outputsmask[:,:,0:ntraincases]
+				self.valoutputsmask = outputsmask[:,:,ntraincases:ncases]
+			
+		# Let's check that all this looks good:
+		assert self.fulltraininputs.shape[2] == ntraincases
+		assert self.valinputs.shape[2] == nvalcases			
+		assert self.fulltraintargets.shape[1] == ntraincases
+		assert self.valtargets.shape[1] == nvalcases			
+		if outputsmask is not None:
+			assert self.fulltrainoutputsmask.shape[2] == ntraincases
+			assert self.valoutputsmask.shape[2] == nvalcases			
+
+
+				
 		# By default, without batches, the full data will get used:
 		self.fullbatch()
 		
@@ -60,9 +125,12 @@ class Training:
 		self.optit = 0 # The iteration counter
 		self.optcall = 0 # The cost function call counter
 		self.optitcall = 0 # Idem, but gets reset at each new iteration
-		self.opterr = np.inf # The current cost function value
+		self.opterr_train = np.inf # The current cost function value on the training set
+		self.opterr_val = np.inf # The current cost function value on the validation set
 		
-		self.opterrs = [] # The cost function value at each call
+		# And some lists describing the optimization:
+		self.opterrs = [] # The cost function value on the training set at each (!) call
+		
 		self.optiterrs = [] # The cost function value at each iteration
 		self.optitparams = [] # A copy of the network parameters at each iteration
 		self.optitcalls = [] # The cost function call counter at each iteration
@@ -71,13 +139,21 @@ class Training:
 		self.verbose = verbose
 		self.itersavepath = itersavepath
 		
+		logger.info("Setup {self}".format(self=self))
+		
 		# And let's test this out before we start, so that it fails fast in case of a problem:
 		if self.itersavepath is not None:
 			self.save(self.itersavepath)
 			
 
 	def __str__(self):
-		return "Training using {self.errfctname} on {ncases} cases with {nrea} realizations".format(self=self, ncases=self.fullinputs.shape[2], nrea=self.fullinputs.shape[0])
+		#return "Training using {self.errfctname} on {ncases} cases with {nrea} realizations".format(self=self, ncases=self.fullinputs.shape[2], nrea=self.fullinputs.shape[0])
+		autotxt = "T_{self.net}({self.errfctname}/{nrea}*{ntraincases}|{nvalcases})".format(
+			self=self, ntraincases=self.fulltraininputs.shape[2], 
+			nvalcases=self.valinputs.shape[2],
+			nrea=self.fulltraininputs.shape[0])
+		return autotxt
+	
 	
 
 	def save(self, filepath):
@@ -92,9 +168,9 @@ class Training:
 		"""
 		Sets the full training sample as batch training data.
 		"""
-		self.inputs = self.fullinputs
-		self.outputsmask = self.fulloutputsmask
-		self.targets = self.fulltargets	
+		self.traininputs = self.fulltraininputs
+		self.trainoutputsmask = self.fulltrainoutputsmask # even if None, this works
+		self.traintargets = self.fulltraintargets	
 		
 
 
@@ -103,22 +179,23 @@ class Training:
 		Selects a random minibatch of the full training set
 		"""
 		
-		ncases = self.fullinputs.shape[2]
+		ncases = self.fulltraininputs.shape[2]
 		if size > ncases:
-			raise RuntimeError("Cannot select {size} among {ncases}".format(**locals()))
+			raise RuntimeError("Cannot select {size} among {ncases}".format(size=size, ncases=ncases))
 		
 		
-		logger.info("Randomly seleting new minibatch of {size} among {ncases} cases...".format(**locals()))
+		logger.info("Randomly seleting new minibatch of {size} among {ncases} cases...".format(size=size, ncases=ncases))
 		caseindexes = np.arange(ncases)
 		np.random.shuffle(caseindexes)
 		caseindexes = caseindexes[0:size]
 			
-		self.inputs = self.fullinputs[:,:,caseindexes]
-		self.targets = self.fulltargets[:,caseindexes]
+		self.traininputs = self.fulltraininputs[:,:,caseindexes]
+		self.traintargets = self.fulltraintargets[:,caseindexes]
 		
-		if self.fulloutputsmask is not None:
-			self.outputsmask = self.fulloutputsmask[:,:,caseindexes] # Yes, outputsmask is 3D
-		
+		if self.fulltrainoutputsmask is not None:
+			self.trainoutputsmask = self.fulltrainoutputsmask[:,:,caseindexes] # Yes, outputsmask is 3D
+		else:
+			self.trainoutputsmask = None
 		
 		
 		"""
@@ -197,11 +274,11 @@ class Training:
 		errfct = eval("err.{0}".format(self.errfctname))
 	
 		self.params[:] = p # Updates the network parameters
-		outputs = self.net.run(self.inputs) # This is not a masked array!
-		if self.outputsmask is None:
-			err = errfct(outputs, self.targets)
+		outputs = self.net.run(self.traininputs) # This is not a masked array!
+		if self.trainoutputsmask is None:
+			err = errfct(outputs, self.traintargets)
 		else:
-			err = errfct(np.ma.array(outputs, mask=self.outputsmask), self.targets)
+			err = errfct(np.ma.array(outputs, mask=self.trainoutputsmask), self.traintargets)
 			
 		self.opterr = err
 		self.optcall += 1
