@@ -16,6 +16,13 @@ from . import act
 
 
 
+class Iterstate:
+	"""
+	Container to group all the data related to an iteration of the training. 
+	The training will fill a list of these Iterstates so to make nice plots afterwards.
+	"""
+
+
 class Training:
 	"""
 	Holds together everthing related to the process of training a Tenbilac.
@@ -91,6 +98,7 @@ class Training:
 				
 			
 		else: # then we just slice the arrays:
+			logger.info("Selecting the last {nvalcases} among {ncases} cases for validation (no shuffling)".format(ncases=ncases, nvalcases=nvalcases))
 			
 			self.fulltraininputs = nomaskinputs[:,:,0:ntraincases]
 			self.valinputs = nomaskinputs[:,:,ntraincases:ncases]
@@ -120,19 +128,21 @@ class Training:
 		
 		# Setting up the cost function
 		self.errfctname = errfctname
+		self.errfct = eval("err.{0}".format(self.errfctname))
 		
 		# We initialize some counters for the optimization:
 		self.optit = 0 # The iteration counter
 		self.optcall = 0 # The cost function call counter
 		self.optitcall = 0 # Idem, but gets reset at each new iteration
-		self.opterr_train = np.inf # The current cost function value on the training set
-		self.opterr_val = np.inf # The current cost function value on the validation set
+		self.opterr = np.inf # The current cost function value on the training set
 		
 		# And some lists describing the optimization:
 		self.opterrs = [] # The cost function value on the training set at each (!) call
 		
-		self.optiterrs = [] # The cost function value at each iteration
 		self.optitparams = [] # A copy of the network parameters at each iteration
+		self.optiterrs_train = [] # The cost function value on the training set at each iteration
+		self.optiterrs_val = [] # The cost function value on the validation set at each iteration
+
 		self.optitcalls = [] # The cost function call counter at each iteration
 		self.optittimes = [] # Time taken for iteration, in seconds
 		
@@ -148,12 +158,22 @@ class Training:
 
 	def __str__(self):
 		#return "Training using {self.errfctname} on {ncases} cases with {nrea} realizations".format(self=self, ncases=self.fullinputs.shape[2], nrea=self.fullinputs.shape[0])
-		autotxt = "T_{self.net}({self.errfctname}/{nrea}*{ntraincases}|{nvalcases})".format(
-			self=self, ntraincases=self.fulltraininputs.shape[2], 
-			nvalcases=self.valinputs.shape[2],
-			nrea=self.fulltraininputs.shape[0])
+		autotxt = "T_{self.net}({self.errfctname}/{nrea}*{nfulltrain}|{nval})".format(
+			self=self, nfulltrain=self.getnfulltrain(), 
+			nval=self.getnval(),
+			nrea=self.getnrea())
 		return autotxt
 	
+	
+	def getntrain(self):
+		return self.traininputs.shape[2]
+	def getnfulltrain(self):
+		return self.fulltraininputs.shape[2]
+	def getnval(self):
+		return self.valinputs.shape[2]
+	def getnrea(self):
+		return self.traininputs.shape[0]
+		
 	
 
 	def save(self, filepath):
@@ -179,13 +199,13 @@ class Training:
 		Selects a random minibatch of the full training set
 		"""
 		
-		ncases = self.fulltraininputs.shape[2]
-		if size > ncases:
-			raise RuntimeError("Cannot select {size} among {ncases}".format(size=size, ncases=ncases))
+		nfulltrain = self.getnfulltrain()
+		if size > nfulltrain:
+			raise RuntimeError("Cannot select {size} among {nfulltrain}".format(size=size, nfulltrain=nfulltrain))
 		
 		
-		logger.info("Randomly seleting new minibatch of {size} among {ncases} cases...".format(size=size, ncases=ncases))
-		caseindexes = np.arange(ncases)
+		logger.info("Randomly seleting new minibatch of {size} among {nfulltrain} cases...".format(size=size, nfulltrain=nfulltrain))
+		caseindexes = np.arange(nfulltrain)
 		np.random.shuffle(caseindexes)
 		caseindexes = caseindexes[0:size]
 			
@@ -225,7 +245,7 @@ class Training:
 		Called at the end of a training
 		"""
 		self.optitcall = 0
-		logger.info("Total training time: {0:.2f} s".format(np.sum(self.optittimes)))
+		logger.info("Cumulated training time: {0:.2f} s".format(np.sum(self.optittimes)))
 		
 
 	def callback(self, *args):
@@ -244,14 +264,20 @@ class Training:
 		callstaken = self.optitcall 
 		
 		self.optittimes.append(secondstaken)
-		self.optiterrs.append(self.opterr)
+		self.optiterrs_train.append(self.opterr)
 		self.optitcalls.append(self.optcall)
 		self.optitparams.append(args[0])
 		
-		callstaken = self.optitcall 
+		# Now we evaluate the cost on the validation set:
+		valerr = self.valcost()
+		self.optiterrs_val.append(valerr)
 		
-		logger.info("Iteration {self.optit:4d}, {self.errfctname} = {self.opterr:.8e}, took {time:.4f} s for {calls} calls ({avg:.4f} s per call)".format(self=self, time=secondstaken, calls=callstaken, avg=float(secondstaken)/float(callstaken)))
+		valerrratio = valerr / self.opterr
 		
+		mscallcase = 1000.0 * float(secondstaken) / (float(callstaken) * self.getntrain()) # Time per call and training case
+		
+		logger.info("Iter. {self.optit:4d}, {self.errfctname} train = {self.opterr:.6e}, val = {valerr:.6e} ({valerrratio:4.1f}), {time:.4f} s for {calls} calls ({mscallcase:.4f} ms/cc)".format(
+			self=self, time=secondstaken, valerr=valerr, valerrratio=valerrratio, calls=callstaken, mscallcase=mscallcase))
 		
 		if self.itersavepath != None:
 			self.save(self.itersavepath)
@@ -267,18 +293,16 @@ class Training:
 		
 	def cost(self, p):
 		"""
-		The as-fast-as-possible function to compute the error based on parameters p.
+		The "as-fast-as-possible" function to compute the training error based on parameters p.
 		This gets called repeatedly by the optimizers.
 		"""
-	
-		errfct = eval("err.{0}".format(self.errfctname))
 	
 		self.params[:] = p # Updates the network parameters
 		outputs = self.net.run(self.traininputs) # This is not a masked array!
 		if self.trainoutputsmask is None:
-			err = errfct(outputs, self.traintargets)
+			err = self.errfct(outputs, self.traintargets)
 		else:
-			err = errfct(np.ma.array(outputs, mask=self.trainoutputsmask), self.traintargets)
+			err = self.errfct(np.ma.array(outputs, mask=self.trainoutputsmask), self.traintargets)
 			
 		self.opterr = err
 		self.optcall += 1
@@ -295,27 +319,43 @@ class Training:
 	def currentcost(self):
 		return self.cost(p=self.params)
 
-
 	def testcost(self):
 		"""
 		Calls the cost function and logs some info.
 		"""
 		
-		logger.info("Testing cost function call...")
+		logger.info("Testing cost function calls...")
 		starttime = datetime.now()
 		err = self.currentcost()
 		endtime = datetime.now()
-		took = (endtime - starttime).total_seconds()
+		took = (endtime - starttime).total_seconds()		
+		logger.info("On the training set:   {took:.4f} seconds, {self.errfctname} = {self.opterr:.8e}".format(self=self, took=took))
+		starttime = datetime.now()
+		err = self.valcost()
+		endtime = datetime.now()
+		took = (endtime - starttime).total_seconds()		
+		logger.info("On the validation set: {took:.4f} seconds, {self.errfctname} = {err:.8e}".format(self=self, took=took, err=err))
 		
-		logger.info("Done in {took:.4f} seconds. Current state: {self.errfctname} = {self.opterr:.8e}".format(self=self, took=took))
+	
+		
+	def valcost(self):
+		"""
+		Evaluates the cost function on the validation set.
+		"""
+		outputs = self.net.run(self.valinputs) # This is not a masked array!
+		if self.valoutputsmask is None:
+			err = self.errfct(outputs, self.valtargets)
+		else:
+			err = errfct(np.ma.array(outputs, mask=self.valoutputsmask), self.valtargets)
+		return err
+		
 	
 	
-	
-	def minibatch_bfgs(self, size=100, nloops=10, maxiter=10):
+	def minibatch_bfgs(self, size=100, nloops=10, **kwargs):
 		
 		for loopi in range(nloops):
 			self.random_minibatch(size=size)
-			self.bfgs(maxiter=maxiter)
+			self.bfgs(**kwargs)
 			
 			
 	
@@ -361,7 +401,6 @@ class Training:
 	
 		self.end()
 	
-
 
 
 
