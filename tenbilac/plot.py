@@ -78,27 +78,30 @@ def errorcurve(train, filepath=None):
 	
 def paramscurve(train, filepath=None):
 	"""
-	Visualization of the evolution of the network parameters during the training
+	Visualization of the evolution of the network parameters during the training, iteration per iteration
 	
 	"""
 	
 	fig = plt.figure(figsize=(10, 10))
 	
 	
-	optparams = np.array(train.optitparams)
-	opterrs = train.optiterrs
-	optits = np.arange(len(train.optiterrs)) + 1
+	optitparams = np.array(train.optitparams)
+	optiterrs_train = np.array(train.optiterrs_train)
+	optiterrs_val = np.array(train.optiterrs_val)
+	optits = np.arange(len(train.optitparams)) + 1
 	
 	ax = plt.subplot(2, 1, 1)
-	ax.plot(optits, opterrs)
+	ax.plot(optits, optiterrs_train, ls="-", color="black")
+	ax.plot(optits, optiterrs_val, ls="--", color="red")
+	
 	ax.set_yscale('log')
 	ax.set_xlabel("Iteration")
 	ax.set_ylabel("Cost function value ({0})".format(train.errfctname))
 	
 	ax = plt.subplot(2, 1, 2)
-	assert optparams.shape[1] == train.net.nparams()
+	assert optitparams.shape[1] == train.net.nparams()
 	for paramindex in range(train.net.nparams()):
-		ax.plot(optits, optparams[:,paramindex])
+		ax.plot(optits, optitparams[:,paramindex])
 	ax.set_xlabel("Iteration")
 	ax.set_ylabel("Network parameter value")
 	
@@ -110,7 +113,11 @@ def paramscurve(train, filepath=None):
 	
 	
 	
+def errors():
+	"""
+	Viz of the individual prediction errors per case ?
 	
+	"""
 	
 	
 	
