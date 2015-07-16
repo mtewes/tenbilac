@@ -44,7 +44,7 @@ class Layer():
 		"""
 		Sets all weights and biases to zero
 		"""
-		logger.debug("Setting all layer parameters to zero...")
+		logger.info("Setting layer '{self.name}' parameters to zero...".format(self=self))
 		self.weights *= 0.0
 		self.biases *= 0.0
 	
