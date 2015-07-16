@@ -33,7 +33,7 @@ class Training:
 		"""
 		if inputs.ndim != 3 and targets.ndim != 2:
 			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
-		logger.info("Setting up the training with {ncases} and {nreas} realizations...".format(ncases=inputs.shape[2], nreas=inputs.shape[0]))
+		logger.info("Setting up the training with {ncases} cases and {nreas} realizations...".format(ncases=inputs.shape[2], nreas=inputs.shape[0]))
 		#logger.info("Training data: inputs = {intype} of shape {inshape} and targets = {tartype} of shape {tarshape}".format(
 		#	intype=str(type(inputs)), inshape=str(inputs.shape), tartype=str(type(targets)), tarshape=str(targets.shape)))
 		
@@ -108,7 +108,7 @@ class Training:
 			raise RuntimeError("Cannot select {size} among {ncases}".format(**locals()))
 		
 		
-		logger.info("Randomly seleting new minibatch of {size} cases...".format(**locals()))
+		logger.info("Randomly seleting new minibatch of {size} among {ncases} cases...".format(**locals()))
 		caseindexes = np.arange(ncases)
 		np.random.shuffle(caseindexes)
 		caseindexes = caseindexes[0:size]
@@ -117,7 +117,7 @@ class Training:
 		self.targets = self.fulltargets[:,caseindexes]
 		
 		if self.fulloutputsmask is not None:
-			self.outputsmask = self.fulloutputsmask[:,caseindexes]
+			self.outputsmask = self.fulloutputsmask[:,:,caseindexes] # Yes, outputsmask is 3D
 		
 		
 		
@@ -231,8 +231,17 @@ class Training:
 		took = (endtime - starttime).total_seconds()
 		
 		logger.info("Done in {took:.4f} seconds. Current state: {self.errfctname} = {self.opterr:.8e}".format(self=self, took=took))
+	
+	
+	
+	def minibatch_bfgs(self, size=100, nloops=10, maxiter=10):
 		
-
+		for loopi in range(nloops):
+			self.random_minibatch(size=size)
+			self.bfgs(maxiter=maxiter)
+			
+			
+	
 
 	def bfgs(self, maxiter=100, gtol=1e-8):
 		
