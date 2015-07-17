@@ -16,19 +16,6 @@ from . import act
 
 
 
-class Iterstate:
-	"""
-	Container to group all the data related to an iteration of the training. 
-	The training will fill a list of these Iterstates so to make nice plots afterwards.
-	"""
-
-
-class Data:
-	"""
-	A container for the training data, with methods to setup validation data, 
-	"""
-
-
 
 class Training:
 	"""
