@@ -223,9 +223,10 @@ class Training:
 	def minibatch_bfgs(self, mbsize=100, mbloops=10, **kwargs):
 		
 		for loopi in range(mbloops):
+			if mbloops > 1:
+				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi, mbloops=mbloops))
 			self.dat.random_minibatch(mbsize=mbsize)
 			self.bfgs(**kwargs)
-			
 			
 	
 
