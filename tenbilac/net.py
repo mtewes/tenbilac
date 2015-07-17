@@ -19,7 +19,7 @@ class Tenbilac():
 	Object representing a network made out of one or several hidden layers.
 	"""
 	
-	def __init__(self, ni, nhs, no=1, onlyid=False, actfct="tanh", name=None):
+	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", name=None):
 		"""
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
@@ -42,7 +42,7 @@ class Tenbilac():
 		
 		iniarch = np.array([self.ni]+self.nhs+[self.no]) # Let's not save this. Layers might evolve dynamically.
 
-		actfct = eval("act.{0}".format(actfct)) # We turn the string actfct option into an actual function
+		actfct = eval("act.{0}".format(actfctname)) # We turn the string actfct option into an actual function
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
 		for (i, nh) in enumerate(self.nhs):

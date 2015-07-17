@@ -23,109 +23,40 @@ class Iterstate:
 	"""
 
 
+class Data:
+	"""
+	A container for the training data, with methods to setup validation data, 
+	"""
+
+
+
 class Training:
 	"""
-	Holds together everthing related to the process of training a Tenbilac.
+	Holds together everthing related to the process of training a Tenbilac: the training data and the network.
 	"""
 
 	
-	def __init__(self, net, inputs, targets, valfrac=0.1, shuffle=True, errfctname="msrb", itersavepath=None, verbose=False, name=None):
-		"""
-		
-		
-		:param valfrac: Fraction of training data which should be used for the validation
-		
-		
-		Sets up
-		- inputs and targets (with respective masks)
-		- housekeeping lists
-		- error function
-		
-		
-		# Naming conventions:
-		fulltraininputs = the full training set
-		valinputs = the full validation set
-		traininputs = a potential "mini batch" subset of the full training set
-		
-		
+	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, verbose=False, name=None):
 		"""
 
-		if inputs.ndim != 3 and targets.ndim != 2:
-			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
-		logger.info("Setting up the training with {ncases} cases and {nreas} realizations...".format(ncases=inputs.shape[2], nreas=inputs.shape[0]))
-		#logger.info("Training data: inputs = {intype} of shape {inshape} and targets = {tartype} of shape {tarshape}".format(
-		#	intype=str(type(inputs)), inshape=str(inputs.shape), tartype=str(type(targets)), tarshape=str(targets.shape)))
-		
-		# The acutal net is an attribute of a training:
-		
+		Sets up
+		- housekeeping lists
+		- error function
+				
+		"""
+
+		self.dat = dat
 		self.net = net
+		
+		# Let's check compatibility between those two!
+		assert net.ni == self.dat.getni()
+		assert net.no == self.dat.getno()
+		
+		
 		self.name = name
 		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
 			
-		# We will "run" the network without paying attention to the masks.
-		# Instead, we now manually generate a mask for the ouputs, so that the errorfunction can disregard the masked realizations.
-		# Indeed all this masking stays the same for given training data, no need to compute this at every iteration...
-		
-		(nomaskinputs, outputsmask) = utils.demask(inputs, no=self.net.no)
-		assert type(targets) == np.ndarray # This should not be masked
-		
-		# Now we cut away part of this for validation purposes, and shuffle before doing so.
-		
-		ncases = inputs.shape[2]
-		nvalcases = int(valfrac * ncases)
-		if nvalcases <= 0:
-			raise RuntimeError("Please allow for some validation cases.")
-		ntraincases = ncases - nvalcases
-
-		if shuffle:
-			logger.info("Shuffling training data and selecting {nvalcases} among {ncases} cases for validation...".format(ncases=ncases, nvalcases=nvalcases))
-			caseindexes = np.arange(ncases)
-			np.random.shuffle(caseindexes)
-			trainindexes = caseindexes[0:ntraincases]
-			valindexes = caseindexes[ntraincases:ncases]
 			
-			self.fulltraininputs = nomaskinputs[:,:,trainindexes]
-			self.valinputs = nomaskinputs[:,:,valindexes]
-			self.fulltraintargets = targets[:,trainindexes]
-			self.valtargets = targets[:,valindexes]
-			
-			if outputsmask is None:
-				self.fulltrainoutputsmask = None
-				self.valoutputsmask = None
-			else:
-				self.fulltrainoutputsmask = outputsmask[:,:,trainindexes]
-				self.valoutputsmask = outputsmask[:,:,valindexes]
-				
-			
-		else: # then we just slice the arrays:
-			logger.info("Selecting the last {nvalcases} among {ncases} cases for validation (no shuffling)".format(ncases=ncases, nvalcases=nvalcases))
-			
-			self.fulltraininputs = nomaskinputs[:,:,0:ntraincases]
-			self.valinputs = nomaskinputs[:,:,ntraincases:ncases]
-			self.fulltraintargets = targets[:,0:ntraincases]
-			self.valtargets = targets[:,ntraincases:ncases]
-			
-			if outputsmask is None:
-				self.fulltrainoutputsmask = None
-				self.valoutputsmask = None
-			else:
-				self.fulltrainoutputsmask = outputsmask[:,:,0:ntraincases]
-				self.valoutputsmask = outputsmask[:,:,ntraincases:ncases]
-			
-		# Let's check that all this looks good:
-		assert self.fulltraininputs.shape[2] == ntraincases
-		assert self.valinputs.shape[2] == nvalcases			
-		assert self.fulltraintargets.shape[1] == ntraincases
-		assert self.valtargets.shape[1] == nvalcases			
-		if outputsmask is not None:
-			assert self.fulltrainoutputsmask.shape[2] == ntraincases
-			assert self.valoutputsmask.shape[2] == nvalcases			
-
-
-				
-		# By default, without batches, the full data will get used:
-		self.fullbatch()
-		
 		# Setting up the cost function
 		self.errfctname = errfctname
 		self.errfct = eval("err.{0}".format(self.errfctname))
@@ -149,88 +80,39 @@ class Training:
 		self.verbose = verbose
 		self.itersavepath = itersavepath
 		
-		logger.info("Setup {self}".format(self=self))
+		logger.info("Done with setup of {self}".format(self=self))
 		
 		# And let's test this out before we start, so that it fails fast in case of a problem:
 		if self.itersavepath is not None:
 			self.save(self.itersavepath)
-			
+	
+	
+	def set_dat(self, dat):
+		"""
+		Allows to add or replace training data (e.g. when reading a self.save()...)
+		"""
+		self.dat = dat
+	
 
 	def __str__(self):
-		#return "Training using {self.errfctname} on {ncases} cases with {nrea} realizations".format(self=self, ncases=self.fullinputs.shape[2], nrea=self.fullinputs.shape[0])
-		autotxt = "T_{self.net}({self.errfctname}/{nrea}*{nfulltrain}|{nval})".format(
-			self=self, nfulltrain=self.getnfulltrain(), 
-			nval=self.getnval(),
-			nrea=self.getnrea())
+		
+		autotxt = "{self.errfctname}({self.net}, {self.dat})".format(self=self)				
 		return autotxt
 	
-	
-	def getntrain(self):
-		return self.traininputs.shape[2]
-	def getnfulltrain(self):
-		return self.fulltraininputs.shape[2]
-	def getnval(self):
-		return self.valinputs.shape[2]
-	def getnrea(self):
-		return self.traininputs.shape[0]
-		
 	
 
 	def save(self, filepath):
 		"""
-		Saves self into a pkl file
+		Saves the training progress into a pkl file
+		As the training data is so massive, we do not save it!
 		"""
+		
+		tmptraindata = self.dat
+		self.sat = None
 		utils.writepickle(self, filepath)		
+		self.dat = tmptraindata
 
 
-
-	def fullbatch(self):
-		"""
-		Sets the full training sample as batch training data.
-		"""
-		self.traininputs = self.fulltraininputs
-		self.trainoutputsmask = self.fulltrainoutputsmask # even if None, this works
-		self.traintargets = self.fulltraintargets	
-		
-
-
-	def random_minibatch(self, size=10):
-		"""
-		Selects a random minibatch of the full training set
-		"""
-		
-		nfulltrain = self.getnfulltrain()
-		if size > nfulltrain:
-			raise RuntimeError("Cannot select {size} among {nfulltrain}".format(size=size, nfulltrain=nfulltrain))
-		
-		
-		logger.info("Randomly seleting new minibatch of {size} among {nfulltrain} cases...".format(size=size, nfulltrain=nfulltrain))
-		caseindexes = np.arange(nfulltrain)
-		np.random.shuffle(caseindexes)
-		caseindexes = caseindexes[0:size]
-			
-		self.traininputs = self.fulltraininputs[:,:,caseindexes]
-		self.traintargets = self.fulltraintargets[:,caseindexes]
-		
-		if self.fulltrainoutputsmask is not None:
-			self.trainoutputsmask = self.fulltrainoutputsmask[:,:,caseindexes] # Yes, outputsmask is 3D
-		else:
-			self.trainoutputsmask = None
-		
-		
-		"""
-		if batchsize is not None:
-			self.batchsize = batchsize
-			self.nbatch = int(inputs.shape[2] // batchsize) # floor division: number of batch samples we can do
-			self.batchlist = [(batchi*batchsize, (batchi+1)*batchsize) for batchi in range(self.nbatch)]
-			self.batchi = 0 # We will start with the first batch
-			
-			logger.info("Will work with {self.nbatch} batches, each containing {self.batchsize} training cases.".format(self=self))
-		else:
-			self.batchsize = None
-		"""
-		
-		
 	def start(self):
 		"""
 		Called a the beginning of a training 
@@ -274,7 +156,7 @@ class Training:
 		
 		valerrratio = valerr / self.opterr
 		
-		mscallcase = 1000.0 * float(secondstaken) / (float(callstaken) * self.getntrain()) # Time per call and training case
+		mscallcase = 1000.0 * float(secondstaken) / (float(callstaken) * self.dat.getntrain()) # Time per call and training case
 		
 		logger.info("Iter. {self.optit:4d}, {self.errfctname} train = {self.opterr:.6e}, val = {valerr:.6e} ({valerrratio:4.1f}), {time:.4f} s for {calls} calls ({mscallcase:.4f} ms/cc)".format(
 			self=self, time=secondstaken, valerr=valerr, valerrratio=valerrratio, calls=callstaken, mscallcase=mscallcase))
@@ -298,11 +180,11 @@ class Training:
 		"""
 	
 		self.params[:] = p # Updates the network parameters
-		outputs = self.net.run(self.traininputs) # This is not a masked array!
-		if self.trainoutputsmask is None:
-			err = self.errfct(outputs, self.traintargets)
+		outputs = self.net.run(self.dat.traininputs) # This is not a masked array!
+		if self.dat.trainoutputsmask is None:
+			err = self.errfct(outputs, self.dat.traintargets)
 		else:
-			err = self.errfct(np.ma.array(outputs, mask=self.trainoutputsmask), self.traintargets)
+			err = self.errfct(np.ma.array(outputs, mask=self.dat.trainoutputsmask), self.dat.traintargets)
 			
 		self.opterr = err
 		self.optcall += 1
@@ -342,19 +224,19 @@ class Training:
 		"""
 		Evaluates the cost function on the validation set.
 		"""
-		outputs = self.net.run(self.valinputs) # This is not a masked array!
-		if self.valoutputsmask is None:
-			err = self.errfct(outputs, self.valtargets)
+		outputs = self.net.run(self.dat.valinputs) # This is not a masked array!
+		if self.dat.valoutputsmask is None:
+			err = self.errfct(outputs, self.dat.valtargets)
 		else:
-			err = errfct(np.ma.array(outputs, mask=self.valoutputsmask), self.valtargets)
+			err = errfct(np.ma.array(outputs, mask=self.dat.valoutputsmask), self.dat.valtargets)
 		return err
 		
 	
 	
-	def minibatch_bfgs(self, size=100, nloops=10, **kwargs):
+	def minibatch_bfgs(self, mbsize=100, mbloops=10, **kwargs):
 		
-		for loopi in range(nloops):
-			self.random_minibatch(size=size)
+		for loopi in range(mbloops):
+			self.dat.random_minibatch(mbsize=mbsize)
 			self.bfgs(**kwargs)
 			
 			
