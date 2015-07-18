@@ -95,7 +95,7 @@ class Training:
 		"""
 		
 		tmptraindata = self.dat
-		self.sat = None
+		self.dat = None
 		utils.writepickle(self, filepath)		
 		self.dat = tmptraindata
 
@@ -152,7 +152,7 @@ class Training:
 			self.save(self.itersavepath)
 		
 		# We reset the iteration counters:
-		self.iterationstarttime = now
+		self.iterationstarttime = datetime.now()
 		self.optitcall = 0 
 			
 		# And now we take care of getting a new batch
@@ -215,7 +215,7 @@ class Training:
 		if self.dat.valoutputsmask is None:
 			err = self.errfct(outputs, self.dat.valtargets)
 		else:
-			err = errfct(np.ma.array(outputs, mask=self.dat.valoutputsmask), self.dat.valtargets)
+			err = self.errfct(np.ma.array(outputs, mask=self.dat.valoutputsmask), self.dat.valtargets)
 		return err
 		
 	
@@ -224,7 +224,7 @@ class Training:
 		
 		for loopi in range(mbloops):
 			if mbloops > 1:
-				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi, mbloops=mbloops))
+				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi+1, mbloops=mbloops))
 			self.dat.random_minibatch(mbsize=mbsize)
 			self.bfgs(**kwargs)
 			
