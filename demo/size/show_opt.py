@@ -5,9 +5,9 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 
-net = tenbilac.utils.readpickle("net_msb.pkl")
-#tenbilac.plot.errorcurve(net)
-tenbilac.plot.paramscurve(net)
+train = tenbilac.utils.readpickle("train_msrb.pkl")
+#tenbilac.plot.errorcurve(train)
+tenbilac.plot.paramscurve(train)
 
 """
 net = tenbilac.utils.readpickle("net_avg.pkl")

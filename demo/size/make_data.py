@@ -16,7 +16,7 @@ def noise(n):
 
 
 # The data that will be used for training:
-n = 200 # Number of "objects" (= number of parameters "theta")
+n = 100 # Number of "objects" (= number of parameters "theta")
 nrea = 1000 # How many realizations of the data ("observations") per parameter
 noise_scale = 0.1
 
@@ -39,8 +39,8 @@ testobs = np.linspace(1.6, 3, ntest).reshape((1, ntest))
 
 
 # Now we norm all these. We build the Normers by using the training data (but uni would work as well...):
-obs_normer = tenbilac.utils.Normer(obs)
-params_normer = tenbilac.utils.Normer(params)
+obs_normer = tenbilac.data.Normer(obs)
+params_normer = tenbilac.data.Normer(params)
 
 normobs = obs_normer(obs)
 normparams = params_normer(params)
