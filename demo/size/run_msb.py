@@ -16,15 +16,15 @@ net.addnoise(wscale=0.1, bscale=0.1)
 
 data = tenbilac.data.Traindata(normobs, normparams, valfrac=0.5, shuffle=True)
 
-
 train = tenbilac.train.Training(net, data, errfctname="msrb")
 
+train.minibatch_bfgs(mbsize=50, mbloops=5, maxiter=30)
 
-train.minibatch_bfgs(mbsize=20, mbloops=3, maxiter=30)
+train.save("train_msrb.pkl", keepdata=True)
 
-train.save("train_msrb.pkl")
+#tenbilac.plot.paramscurve(train)
 
-exit()
+#exit()
 
 """
 print train.currentcost()

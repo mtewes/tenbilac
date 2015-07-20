@@ -7,7 +7,11 @@ logging.basicConfig(level=logging.INFO)
 
 train = tenbilac.utils.readpickle("train_msrb.pkl")
 #tenbilac.plot.errorcurve(train)
-tenbilac.plot.paramscurve(train)
+#tenbilac.plot.paramscurve(train)
+
+tenbilac.plot.outdistribs(train)
+
+#tenbilac.plot.paramscurve(train)
 
 """
 net = tenbilac.utils.readpickle("net_avg.pkl")
