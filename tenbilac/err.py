@@ -30,12 +30,14 @@ def msb(predictions, targets):
 
 
 	
-def msrb(predictions, targets):
+def msrb(predictions, targets, rawterms=False):
 	"""
 	Mean square relative bias
 	
 	:param predictions: 3D array (realization, neuron, galaxy), should be appropiratedly masked (thus not directly the output of the net)
 	:param targets: 2D array (neuron, galaxy)
+	
+	:param rawterms: if True, returns the "RB" of "MSRB" as (potentially masked) 2D array.
 	
 	"""
 	
@@ -49,16 +51,20 @@ def msrb(predictions, targets):
 		stds = np.std(predictions, axis=0) # Same shape
 		
 		if type(predictions) == np.ma.MaskedArray:
-			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0) + 0.0 # Number of realizations, 0.0 makes this floats
+			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0) + 0.0 # Number of realizations, 0.0 makes this floats # This is 2D (label, galaxy)
 		elif type(predictions) == np.ndarray:
 			reacounts = predictions.shape[0] + 0.0
 		else:
 			raise RuntimeError("Type error in predictions.")
 		
-		errsonbiases = stds / np.sqrt(reacounts)
-		relativebiases = biases / errsonbiases
+		errsonbiases = stds / np.sqrt(reacounts) # 2D
+		relativebiases = biases / errsonbiases # 2D
 		
-		return np.mean(np.square(relativebiases))
+		if rawterms:
+			#return (biases, errsonbiases)
+			return relativebiases
+		else:
+			return np.mean(np.square(relativebiases))
 		
 	
 	else:
