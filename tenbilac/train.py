@@ -111,17 +111,21 @@ class Training:
 	
 	
 
-	def save(self, filepath):
+	def save(self, filepath, keepdata=False):
 		"""
 		Saves the training progress into a pkl file
 		As the training data is so massive, we do not save it!
 		"""
-		
-		tmptraindata = self.dat
-		self.set_datstr()
-		self.dat = None
-		utils.writepickle(self, filepath)		
-		self.dat = tmptraindata
+
+		if keepdata is True:
+			logger.info("Writing training to disk and keeping the data...")
+			utils.writepickle(self, filepath)	
+		else:
+			tmptraindata = self.dat
+			self.set_datstr()
+			self.dat = None
+			utils.writepickle(self, filepath)		
+			self.dat = tmptraindata
 
 
 	def start(self):
