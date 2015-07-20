@@ -32,8 +32,8 @@ class Training:
 				
 		"""
 
-		self.dat = dat
 		self.net = net
+		self.set_dat(dat)
 		
 		# Let's check compatibility between those two!
 		assert net.ni == self.dat.getni()
@@ -63,6 +63,7 @@ class Training:
 
 		self.optitcalls = [] # The cost function call counter at each iteration
 		self.optittimes = [] # Time taken for iteration, in seconds
+		self.optbatchchangeits = [] # Iteration counter (in fact indices) when the batche gets changed
 		
 		self.verbose = verbose
 		self.itersavepath = itersavepath
@@ -79,12 +80,34 @@ class Training:
 		Allows to add or replace training data (e.g. when reading a self.save()...)
 		"""
 		self.dat = dat
-	
+		self.set_datstr()
+		
+	def set_datstr(self):
+		"""
+		We do this so that we can still display this string on plots if dat has been removed.
+		"""
+		self.datstr = str(self.dat)
+		
 
 	def __str__(self):
-		
-		autotxt = "{self.errfctname}({self.net}, {self.dat})".format(self=self)				
+		"""
+		A short spaceless automatic description
+		"""	
+		if self.dat is not None: # If available, we use the live dat.
+			datstr = str(self.dat)
+		else: # Otherwise, we use datstr as backup solution.
+			datstr = getattr(self, "datstr", "Ouch!") # To ensure that it works also if datstr is missing (backwards compatibility).
+		autotxt = "{self.errfctname}({self.net}, {datstr})".format(self=self, datstr=datstr)				
 		return autotxt
+	
+	def title(self):
+		"""
+		Returns the name and string, typically nicer for plots.
+		"""
+		if self.name is not None:
+			return "Training '{name}': {auto}".format(name=self.name, auto=str(self))
+		else:
+			return str(self)
 	
 	
 
@@ -95,6 +118,7 @@ class Training:
 		"""
 		
 		tmptraindata = self.dat
+		self.set_datstr()
 		self.dat = None
 		utils.writepickle(self, filepath)		
 		self.dat = tmptraindata
@@ -226,6 +250,7 @@ class Training:
 			if mbloops > 1:
 				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi+1, mbloops=mbloops))
 			self.dat.random_minibatch(mbsize=mbsize)
+			self.optbatchchangeits.append(self.optit) # We record this minibatch change
 			self.bfgs(**kwargs)
 			
 	
