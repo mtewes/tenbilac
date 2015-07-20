@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches
 import matplotlib.lines
 
+from . import err
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -121,8 +123,8 @@ def paramscurve(train, filepath=None):
 	ax.plot(optits, optiterrs_train, ls="-", color="black", label="Training batch")
 	ax.plot(optits, optiterrs_val, ls="--", color="red", label="Validation set")
 	
-	for i in timeindices:
-		ax.annotate("{0:.1f}".format(cumoptittimes[i]), xy=(optits[i], optiterrs_val[i]), xytext=(0, 10), textcoords='offset points')
+	#for i in timeindices:
+	#	ax.annotate("{0:.1f}".format(cumoptittimes[i]), xy=(optits[i], optiterrs_val[i]), xytext=(0, 10), textcoords='offset points')
 	
 	ax.set_yscale('log')
 	ax.set_xlabel("Iteration")
@@ -143,7 +145,7 @@ def paramscurve(train, filepath=None):
 		if layername == "o":
 			color="black"
 		else:
-			color="red"
+			color="blue"
 		
 		pla = ax.plot(optits, optitparams[:,paramindex], ls=ls, color=color)
 	ax.set_xlabel("Iteration")
@@ -152,7 +154,7 @@ def paramscurve(train, filepath=None):
 	# Now creating the legend
 	
 	black_patch = matplotlib.patches.Patch(color='black', label='Output layer')
-	red_patch = matplotlib.patches.Patch(color='red', label='Hidden layers')
+	red_patch = matplotlib.patches.Patch(color='blue', label='Hidden layers')
 	line = matplotlib.lines.Line2D([], [], color='black', marker='', ls="-", label='Weight')
 	dashed = matplotlib.lines.Line2D([], [], color='black', marker='', ls="--", label='Bias')
 	
@@ -162,8 +164,87 @@ def paramscurve(train, filepath=None):
 	plt.show()	
 
 
+
+
+
+
+def outdistribs(train, filepath=None):
+	"""
+	
+	"""
+	fig = plt.figure(figsize=(18, 5*train.net.no))
+	
+	dat = train.dat
+	net = train.net
+	
+	trainoutputs = np.ma.array(net.run(dat.traininputs), mask=dat.trainoutputsmask)
+	valoutputs =  np.ma.array(net.run(dat.valinputs), mask=dat.valoutputsmask)
+	
+	trainerrors = trainoutputs - dat.traintargets # 3D - 2D = 3D
+	valerrors = valoutputs - dat.valtargets
+	
+	valmsrbterms = err.msrb(valoutputs, dat.valtargets, rawterms=True)
+	trainmsrbterms = err.msrb(trainoutputs, dat.traintargets, rawterms=True)
 	
 	
+	for io in range(train.net.no):
+		
+		# Subplots: (lines, columns, number)
+		ax = plt.subplot(train.net.no, 2, io+1)
+		
+		
+		# We collect the stuff to be plotted as 1D arrays:
+		
+		thiso_valoutputs = np.ravel(valoutputs[:,io,:])
+		thiso_trainoutputs = np.ravel(trainoutputs[:,io,:])
+		
+		thiso_valtargets = np.ravel(dat.valtargets[io,:])
+		thiso_traintargets = np.ravel(dat.traintargets[io,:])
+		
+		thiso_valerrors = np.ravel(valerrors[:,io,:])
+		thiso_trainerrors = np.ravel(trainerrors[:,io,:])
+		
+		
+		# A bit more involved: we compute the terms that go into the MSRB.
+		
+		thiso_valmsrbterms = np.ravel(valmsrbterms[io,:])
+		thiso_trainmsrbterms = np.ravel(trainmsrbterms[io,:])
+		
+		
+		# And now we plot the panels side by side:
+		ncol = 4
+		
+		ax = plt.subplot(train.net.no, ncol, (io*ncol)+1)
+		ax.hist(thiso_valoutputs, bins=50, histtype="step", color="red", label="Validation set")
+		ax.hist(thiso_trainoutputs, bins=50, histtype="step", color="black", label="Training batch")
+		ax.set_yscale('log')
+		ax.set_ylabel("Counts (mixing all realizations and cases)")
+		ax.set_xlabel("Output '{0}'".format(net.onames[io]))
+		
+		ax = plt.subplot(train.net.no, ncol, (io*ncol)+2)
+		ax.hist(thiso_valtargets, bins=10, histtype="step", color="red", label="Validation set")
+		ax.hist(thiso_traintargets, bins=10, histtype="step", color="black", label="Training batch")
+		ax.set_ylabel("Counts (mixing all cases)")
+		ax.set_xlabel("Targets for '{0}'".format(net.onames[io]))
+		
+		ax = plt.subplot(train.net.no, ncol, (io*ncol)+3)
+		ax.hist(thiso_valerrors, bins=50, histtype="step", color="red", label="Validation set")
+		ax.hist(thiso_trainerrors, bins=50, histtype="step", color="black", label="Training batch")
+		ax.set_ylabel("Counts (mixing all realizations and cases)")
+		ax.set_xlabel("Errors of '{0}'".format(net.onames[io]))
+		ax.set_yscale('log')
+		
+		ax = plt.subplot(train.net.no, ncol, (io*ncol)+4)
+		ax.hist(thiso_valmsrbterms, bins=10, histtype="step", color="red", label="Validation set")
+		ax.hist(thiso_trainmsrbterms, bins=10, histtype="step", color="black", label="Training batch")
+		ax.set_ylabel("Counts (mixing all cases)")
+		ax.set_xlabel("Relative biases of '{0}'".format(net.onames[io]))
+		ax.set_yscale('log')
+	
+	
+	plt.tight_layout()
+	plt.show()	
+
 	
 	
 def errors():
