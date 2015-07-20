@@ -19,7 +19,7 @@ class Tenbilac():
 	Object representing a network made out of one or several hidden layers.
 	"""
 	
-	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", name=None):
+	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", name=None, inames=None, onames=None):
 		"""
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
@@ -32,6 +32,10 @@ class Tenbilac():
 		:param name: if None, will be set automatically
 		:type name: string
 		
+		:param inames: a list of names (strings) for the input nodes, to be used, e.g., in checkplots.
+			These names have a purely decorative function, and are optional.
+		:param onames: idem, for the ouptut nodes.
+		
 		
 		"""
 	
@@ -40,7 +44,21 @@ class Tenbilac():
 		self.no = no
 		self.name = name
 		
-		iniarch = np.array([self.ni]+self.nhs+[self.no]) # Let's not save this. Layers might evolve dynamically.
+		# We take care of the inames and onames:
+		if inames is None:
+			self.inames = ["i_"+str(i) for i in range(self.ni)]
+		else:
+			self.inames = inames
+			if len(self.inames) != self.ni:
+				raise RuntimeError("Your number of inames is wrong")
+		if onames is None:
+			self.onames = ["o_"+str(i) for i in range(self.no)]
+		else:
+			self.onames = onames
+			if len(self.onames) != self.no:
+				raise RuntimeError("Your number of onames is wrong")
+		
+		iniarch = np.array([self.ni]+self.nhs+[self.no]) # Note that we do not save this. Layers might evolve dynamically in future!
 
 		actfct = eval("act.{0}".format(actfctname)) # We turn the string actfct option into an actual function
 		
@@ -143,6 +161,27 @@ class Tenbilac():
 		assert ref.size == self.nparams()
 		return ref
 
+
+
+	def get_paramlabels(self, schema=2):
+		"""
+		Returns a list with labels describing the params. This is for humans and plots.
+		Note that plots might expect these labels to have particular formats.
+		"""
+			
+		paramlabels=[]
+		ind = 0
+		
+		if schema == 2:
+			for l in self.layers[::-1]:
+				
+				paramlabels.extend(l.nn*["layer-{l.name}_bias".format(l=l)])
+				paramlabels.extend(l.nn*l.ni*["layer-{l.name}_weight".format(l=l)])
+		
+		assert len(paramlabels) == self.nparams()
+		
+		return paramlabels
+		
 
 
 	def addnoise(self, **kwargs):
