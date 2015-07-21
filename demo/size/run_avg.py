@@ -6,13 +6,24 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 
-(n, nrea, noise_scale, params, obs, obs_normer, params_normer, normobs, normparams, uninrea, uniparams, uniobs, ntest, testobs, normtestobs, normuniparams, normuniobs) = tenbilac.utils.readpickle("data.pkl")
+(obs_normer, params_normer, normobs, normparams, normuniparams, normuniobs, normtestobs) = tenbilac.utils.readpickle("data.pkl")
 
 # We average the training observations over the realizations:
-normobs = np.mean(normobs, axis=0).reshape(1, 1, n)
+normobs = np.mean(normobs, axis=0).reshape(1, 1, normobs.shape[2])
 
-net = tenbilac.net.Tenbilac(1, [5])
-net.addnoise()
-net.train(normobs, normparams, errfct="mse", maxiter=100)
-net.save("net_avg.pkl")
+traindata = tenbilac.data.Traindata(normobs, normparams, valfrac=0.5, shuffle=True)
+
+net = tenbilac.net.Tenbilac(1, [7])
+net.setidentity()
+net.addnoise(wscale=0.1, bscale=0.1)
+
+train = tenbilac.train.Training(net, traindata, errfctname="mse")
+
+train.minibatch_bfgs(mbsize=100, mbloops=5, maxiter=50)
+
+tenbilac.plot.paramscurve(train, filepath="train_avg.png")
+
+train.save("train_avg.pkl", keepdata=True)
+
+
 
