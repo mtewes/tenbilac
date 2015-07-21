@@ -85,7 +85,7 @@ ax.plot([0, 2], [0, 2], color="black", dashes=(5, 5), lw=1.5)
 ax.set_xlabel(r"$\theta$", fontsize=18)
 ax.set_ylabel(r"$\hat{\theta}$", fontsize=18)
 ax.set_xlim(-0.2, 2.2)
-ax.set_ylim(-1.0, 3.0)
+ax.set_ylim(-3.0, 2.5)
 
 
 

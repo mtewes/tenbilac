@@ -17,7 +17,7 @@ traindata = tenbilac.data.Traindata(normobs, normparams, valfrac=0.5, shuffle=Tr
 
 train = tenbilac.train.Training(net, traindata, errfctname="msrb")
 
-train.minibatch_bfgs(mbsize=100, mbloops=5, maxiter=50)
+train.minibatch_bfgs(mbsize=250, mbloops=1, maxiter=200)
 
 tenbilac.plot.paramscurve(train, filepath="train_msrb.png")
 
