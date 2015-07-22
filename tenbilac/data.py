@@ -211,8 +211,11 @@ class Traindata:
 
 	def __init__(self, inputs, targets, valfrac=0.5, shuffle=True):
 		"""
+		
+		:param inputs: masked 3D array with the inputs, I'll take care of demasking it.
+		:param targets: 2D array with the targets (should not be masked, as targets should all be known...)
+		
 		:param valfrac: Fraction of training data which should be used for the validation
-	
 	
 		"""
 		
