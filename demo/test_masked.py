@@ -8,6 +8,52 @@ logging.basicConfig(level=logging.INFO)
 import matplotlib.pyplot as plt
 
 
+# Test with 5 reas, 2 nodes, 3 cases.
+
+a = np.random.randn(5*2*3).reshape(5, 2, 3)
+mask = np.zeros(5*2*3).reshape(5, 2, 3)
+a = np.ma.array(a, mask=mask)
+
+# First node and case has one crazy value:
+a[0,0,0] = 1.0e8
+
+print "mean"
+print np.mean(a, axis=0)
+
+a.mask[0,0,0] = True
+
+print np.mean(a, axis=0)
+
+# What happens if all realizations are masked :
+
+a.mask[:,0,0] = True
+
+print np.mean(a, axis=0)
+
+print "std"
+print np.std(a, axis=0)
+a.mask[:,0,0] = False
+print np.std(a, axis=0)
+
+# And if only one rea is available:
+
+a.mask[1:,0,0] = True
+print np.std(a, axis=0)
+
+# OK it gives 0.0. All as exected.
+
+
+
+"""
+np.ma.array([[1, 2], [3, 4]], mask=[[True, False], [False, False]])
+
+b = np.tile(a, 5)
+print b.shape
+
+print b
+"""
+
+
 """
 # Test of dot on masked arrays:
 
