@@ -161,7 +161,11 @@ def paramscurve(train, filepath=None):
 	ax.legend(handles=[line, dashed, black_patch, red_patch])
 	
 	plt.tight_layout()
-	plt.show()	
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing paramscurve to {0}".format(filepath))
+		plt.savefig(filepath)
 
 
 
@@ -243,7 +247,11 @@ def outdistribs(train, filepath=None):
 	
 	
 	plt.tight_layout()
-	plt.show()	
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing outdistribs to {0}".format(filepath))
+		plt.savefig(filepath)
 
 	
 	
