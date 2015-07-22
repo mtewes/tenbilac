@@ -88,3 +88,20 @@ def mse(predictions, targets):
 	#return np.mean(np.square(net.run(inputs[0]) - targets))
 
 
+
+def msre(predictions, targets):
+	"""
+	Weighted MSE
+
+	"""
+
+	if predictions.ndim == 3:
+		
+		stds = np.std(predictions, axis=0) # 2D, (label, galaxy)
+
+		return np.mean(np.square((predictions - targets) / stds))
+	
+	else:
+		raise ValueError("Wrong pred shape")
+
+	
