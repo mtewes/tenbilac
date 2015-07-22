@@ -5,6 +5,7 @@ Training a network happens here
 import numpy as np
 import scipy.optimize
 from datetime import datetime
+import os
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,19 +32,16 @@ class Training:
 		- error function
 				
 		"""
-
-		self.net = net
+		
+		self.name = name
+	
+		self.set_net(net)
 		self.set_dat(dat)
 		
 		# Let's check compatibility between those two!
 		assert net.ni == self.dat.getni()
 		assert net.no == self.dat.getno()
-		
-		
-		self.name = name
-		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
-			
-			
+				
 		# Setting up the cost function
 		self.errfctname = errfctname
 		self.errfct = eval("err.{0}".format(self.errfctname))
@@ -70,9 +68,11 @@ class Training:
 		
 		logger.info("Done with setup of {self}".format(self=self))
 		
-		# And let's test this out before we start, so that it fails fast in case of a problem:
+		# And let's test this out before we start, so that it fails fast in case of a problem.
+		# But we only do so if the file does not yet exist, to avoid overwriting an existing training.
 		if self.itersavepath is not None:
-			self.save(self.itersavepath)
+			if not os.path.exists(self.itersavepath):
+				self.save(self.itersavepath)
 	
 	
 	def set_dat(self, dat):
@@ -82,12 +82,22 @@ class Training:
 		self.dat = dat
 		self.set_datstr()
 		
+
 	def set_datstr(self):
 		"""
 		We do this so that we can still display this string on plots if dat has been removed.
 		"""
 		self.datstr = str(self.dat)
+	
+
+	def set_net(self, net):
+		"""
+		Replaces the network object
+		"""
+		self.net = net
+		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
 		
+	
 
 	def __str__(self):
 		"""
@@ -109,6 +119,44 @@ class Training:
 		else:
 			return str(self)
 	
+	
+	def takeover(self, othertrain):
+		"""
+		This copies the net and all the progress counters and logs from another train object into the current one.
+		Useful if you want to carry on a training with a new train object, typically with different settings and
+		maybe on different data.
+		"""
+		
+		logger.info("Setting up training '{}' to take over the work from '{}'...".format(self.name, othertrain.name))
+		
+		if not self.net.nparams() == othertrain.net.nparams():
+			raise RuntimeError("Other network is not compatible, this is fishy!")
+		
+		self.set_net(othertrain.net)
+		
+		# Copying the counter positions:
+		self.optit = othertrain.optit
+		self.optcall = othertrain.optcall
+		self.optitcall = 0 # Gets reset at each new iteration
+		self.opterr = othertrain.opterr
+		
+		# And some lists describing the optimization:
+		self.opterrs = othertrain.opterrs[:]
+		
+		self.optitparams = othertrain.optitparams[:]
+		self.optiterrs_train = othertrain.optiterrs_train[:]
+		self.optiterrs_val = othertrain.optiterrs_val[:]
+
+		self.optitcalls = othertrain.optitcalls[:]
+		self.optittimes = othertrain.optittimes[:]
+		try:
+			self.optbatchchangeits = othertrain.optbatchchangeits[:]
+		except AttributeError:
+			self.optbatchchangeits = []
+		
+
+		logger.info("Done with the takeover")
+		
 	
 
 	def save(self, filepath, keepdata=False):
