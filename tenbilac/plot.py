@@ -82,7 +82,7 @@ def errorcurve(train, filepath=None):
 
 	
 	
-def paramscurve(train, filepath=None):
+def paramscurve(train, filepath=None, showtimes=True):
 	"""
 	Visualization of the evolution of the network parameters during the training, iteration per iteration
 	
@@ -97,7 +97,7 @@ def paramscurve(train, filepath=None):
 	
 	# The cpu durations
 	optittimes = np.array(train.optittimes)
-	cumoptittimes = np.cumsum(optittimes)
+	cumoptittimes = np.cumsum(optittimes)/60.0 # minutes
 	assert cumoptittimes.size == optittimes.size
 	
 	if optittimes.size > 10:
@@ -123,8 +123,9 @@ def paramscurve(train, filepath=None):
 	ax.plot(optits, optiterrs_train, ls="-", color="black", label="Training batch")
 	ax.plot(optits, optiterrs_val, ls="--", color="red", label="Validation set")
 	
-	#for i in timeindices:
-	#	ax.annotate("{0:.1f}".format(cumoptittimes[i]), xy=(optits[i], optiterrs_val[i]), xytext=(0, 10), textcoords='offset points')
+	if showtimes:
+		for i in timeindices:
+			ax.annotate("{0:.1f}".format(cumoptittimes[i]), xy=(optits[i], optiterrs_val[i]), xytext=(0, 10), textcoords='offset points')
 	
 	ax.set_yscale('log')
 	ax.set_xlabel("Iteration")
@@ -180,7 +181,9 @@ def outdistribs(train, filepath=None):
 	
 	dat = train.dat
 	net = train.net
+	assert dat is not None
 	
+	logger.info("Computing predictions...")
 	trainoutputs = np.ma.array(net.run(dat.traininputs), mask=dat.trainoutputsmask)
 	valoutputs =  np.ma.array(net.run(dat.valinputs), mask=dat.valoutputsmask)
 	
@@ -194,9 +197,6 @@ def outdistribs(train, filepath=None):
 	for io in range(train.net.no):
 		
 		# Subplots: (lines, columns, number)
-		ax = plt.subplot(train.net.no, 2, io+1)
-		
-		
 		# We collect the stuff to be plotted as 1D arrays:
 		
 		thiso_valoutputs = np.ravel(valoutputs[:,io,:])
@@ -255,12 +255,82 @@ def outdistribs(train, filepath=None):
 
 	
 	
-def errors():
+def errors(train, filepath=None, io=0):
 	"""
-	Viz of the individual prediction errors per case ?
+	Viz of the prediction errors as function of inputs
+	
+	:param io: the index of the ouput I should use. If you have only one neuron, this is 0.
 	
 	"""
+	nlines = 2
 	
+	fig = plt.figure(figsize=(3.3*train.net.ni, 3.5*nlines))
 	
+	dat = train.dat
+	net = train.net
+	assert dat is not None
 	
+	logger.info("Computing predictions...")
+	trainoutputs = np.ma.array(net.run(dat.traininputs), mask=dat.trainoutputsmask)
+	valoutputs =  np.ma.array(net.run(dat.valinputs), mask=dat.valoutputsmask)
+	logger.info("Done")
+	
+	trainerrors = trainoutputs - dat.traintargets # 3D - 2D = 3D: (rea, label, case)
+	valerrors = valoutputs - dat.valtargets # idem
+	
+	#valmsrbterms = err.msrb(valoutputs, dat.valtargets, rawterms=True)
+	#trainmsrbterms = err.msrb(trainoutputs, dat.traintargets, rawterms=True)
+	
+		
+	for ii in range(train.net.ni):
+			
+			
+			
+		ax = plt.subplot(nlines, train.net.ni, ii+1)
+			
+		ax.hist(np.ravel(dat.valinputs[:,ii,:]), bins=50, histtype="step", color="red", label="Validation set")
+		ax.hist(np.ravel(dat.traininputs[:,ii,:]), bins=50, histtype="step", color="black", label="Training batch")
+		ax.set_yscale('log')
+		ax.set_ylabel("Counts (reas + cases, masked = 0)")
+		ax.set_xlabel("Input '{0}'".format(net.inames[ii]))
+		# in this plot the masked inputs are shown with a value of 0, this is desired and expected.
+	
+		ax = plt.subplot(nlines, train.net.ni, train.net.ni+ii+1)
+		
+		# The biases on the validation set:
+		valbiases = np.mean(valerrors, axis=0)[io,:] # 1D (case)
+		valbiases = np.tile(valbiases, (dat.valinputs.shape[0], 1)) # Inflated to 2D (rea, case), with all reas having the same value.
+		
+		# We want to get version of these particular inputs with a mask, selecting only one node
+		valinputs = dat.valinputs[:,ii:ii+1,:] # 3D : (rea, 1, case)
+		valinputs = np.ma.array(valinputs, mask=dat.valoutputsmask) # Here an input is masked if any other input of that rea was masked.
+		assert valinputs.shape[1] == 1
+		valinputs = valinputs[:,0,:] # 2D : (rea, case)
+		
+		assert valbiases.shape == valinputs.shape
+		
 
+		# For the plot, we only use points for which the inputs are unmasked 
+		valbiases = valbiases.flatten()
+		valinputs = valinputs.flatten()
+		valbiases = np.ma.array(valbiases, mask = valinputs.mask) # copying the mask
+		valbiases = valbiases.compressed() # Getting rid of the masked elements
+		valinputs = valinputs.compressed() # Getting rid of the masked elements
+		
+		assert valinputs.size == valbiases.size
+		
+		ax.plot(valinputs, valbiases, marker=".", color="red", ls="None", ms=1)
+		
+		ax.set_ylabel("Bias on output '{0}'".format(net.onames[io]))
+		ax.set_xlabel("Input '{0}'".format(net.inames[ii]))
+
+	
+	
+	plt.tight_layout()
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing outdistribs to {0}".format(filepath))
+		plt.savefig(filepath)
+
+	
