@@ -235,6 +235,8 @@ class Tenbilac():
 		"""
 		We compute the outputs from the inputs using self.run, but here we do take care of the potential mask.
 		
+		This is never used during the training phase.
+		
 		:param inputs: a (potentially masked) 3D array
 		
 		:returns: a 3D array, appropriatedly masked
