@@ -47,8 +47,8 @@ def msrb(predictions, targets, rawterms=False):
 		# Just as a test that this was not forgotten, no real need here.
 		# No need, for this, for sure it also works without masks...
 		
-		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy)
-		stds = np.std(predictions, axis=0) # Same shape
+		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy) : masked, but probably all masks are False.
+		stds = np.std(predictions, axis=0) # idem
 		
 		if type(predictions) == np.ma.MaskedArray:
 			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0) + 0.0 # Number of realizations, 0.0 makes this floats # This is 2D (label, galaxy)
@@ -57,12 +57,12 @@ def msrb(predictions, targets, rawterms=False):
 		else:
 			raise RuntimeError("Type error in predictions.")
 		
-		errsonbiases = stds / np.sqrt(reacounts) # 2D
-		relativebiases = biases / errsonbiases # 2D
+		errsonbiases = stds / np.sqrt(reacounts)
+		relativebiases = biases / errsonbiases
 		
 		if rawterms:
 			#return (biases, errsonbiases)
-			return relativebiases
+			return relativebiases # 2D (label, case), masked, but probably all masks are False.
 		else:
 			return np.mean(np.square(relativebiases))
 		
