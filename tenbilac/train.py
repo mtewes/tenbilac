@@ -24,7 +24,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, plotdirpath=".", autoplots=False, verbose=False, name=None):
 		"""
 
 		Sets up
@@ -65,6 +65,9 @@ class Training:
 		
 		self.verbose = verbose
 		self.itersavepath = itersavepath
+		
+		self.plotdirpath = plotdirpath
+		self.autoplots = autoplots
 		
 		logger.info("Done with setup of {self}".format(self=self))
 		
@@ -114,10 +117,12 @@ class Training:
 		"""
 		Returns the name and string, typically nicer for plots.
 		"""
+		
+		
 		if self.name is not None:
-			return "Training '{name}': {auto}".format(name=self.name, auto=str(self))
+			return "Training '{name}': {auto} ({it} it, {tmin:.1f} min)".format(name=self.name, auto=str(self), it=self.optit, tmin=np.sum(self.optittimes)/60.0)
 		else:
-			return str(self)
+			return "{auto} ({it} it, {tmin:.1f} min)".format(auto=str(self), it=self.optit, tmin=np.sum(optittimes)/60.0)
 	
 	
 	def takeover(self, othertrain):
@@ -162,7 +167,8 @@ class Training:
 	def save(self, filepath, keepdata=False):
 		"""
 		Saves the training progress into a pkl file
-		As the training data is so massive, we do not save it!
+		As the training data is so massive, by default we do not save it!
+		Note that this might be done at each iteration!
 		"""
 
 		if keepdata is True:
@@ -174,6 +180,24 @@ class Training:
 			self.dat = None
 			utils.writepickle(self, filepath)		
 			self.dat = tmptraindata
+
+
+
+	def makeplots(self, suffix="_optitXXXXX"):
+		"""
+		Saves a bunch of default checkplots into the specified directory.
+		Can typically be called at the end of training, or after iterations.
+		
+		"""
+		
+		if suffix == "_optitXXXXX":
+			suffix = "_optit{0:05d}".format(self.optit)
+		
+		logger.info("Making and writing plots, with suffix '{}'...".format(suffix))
+		plot.paramscurve(self, os.path.join(self.plotdirpath, "paramscurve"+suffix+".png")
+		plot.outdistribs(self, os.path.join(self.plotdirpath, "outdistribs"+suffix+".png")
+		plot.errorinputs(self, os.path.join(self.plotdirpath, "errorinputs"+suffix+".png")
+		logger.info("Done with plots")
 
 
 	def start(self):
@@ -191,6 +215,8 @@ class Training:
 		"""
 		self.optitcall = 0
 		logger.info("Cumulated training time: {0:.2f} s".format(np.sum(self.optittimes)))
+		if self.autoplots:
+			self.makeplots()
 		
 
 	def callback(self, *args):
