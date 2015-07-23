@@ -14,7 +14,7 @@ from . import layer
 from . import utils
 from . import err
 from . import act
-
+from . import plot
 
 
 
@@ -24,7 +24,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, plotdirpath=".", autoplots=False, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None):
 		"""
 
 		Sets up
@@ -66,8 +66,8 @@ class Training:
 		self.verbose = verbose
 		self.itersavepath = itersavepath
 		
-		self.plotdirpath = plotdirpath
-		self.autoplots = autoplots
+		self.autoplotdirpath = autoplotdirpath
+		self.autoplot = autoplot
 		
 		logger.info("Done with setup of {self}".format(self=self))
 		
@@ -183,20 +183,23 @@ class Training:
 
 
 
-	def makeplots(self, suffix="_optitXXXXX"):
+	def makeplots(self, suffix="_optitXXXXX", dirpath=None):
 		"""
 		Saves a bunch of default checkplots into the specified directory.
 		Can typically be called at the end of training, or after iterations.
 		
 		"""
 		
+		if dirpath is None:
+			dirpath = self.autoplotdirpath
+		
 		if suffix == "_optitXXXXX":
 			suffix = "_optit{0:05d}".format(self.optit)
 		
 		logger.info("Making and writing plots, with suffix '{}'...".format(suffix))
-		plot.paramscurve(self, os.path.join(self.plotdirpath, "paramscurve"+suffix+".png")
-		plot.outdistribs(self, os.path.join(self.plotdirpath, "outdistribs"+suffix+".png")
-		plot.errorinputs(self, os.path.join(self.plotdirpath, "errorinputs"+suffix+".png")
+		plot.paramscurve(self, os.path.join(dirpath, "paramscurve"+suffix+".png"))
+		plot.outdistribs(self, os.path.join(dirpath, "outdistribs"+suffix+".png"))
+		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
 		logger.info("Done with plots")
 
 
@@ -211,11 +214,11 @@ class Training:
 	
 	def end(self):
 		"""
-		Called at the end of a training
+		Called at the end of a training (each minibatch) depening on the algo.
 		"""
 		self.optitcall = 0
 		logger.info("Cumulated training time: {0:.2f} s".format(np.sum(self.optittimes)))
-		if self.autoplots:
+		if self.autoplot:
 			self.makeplots()
 		
 

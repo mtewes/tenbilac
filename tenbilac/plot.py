@@ -235,7 +235,7 @@ def errorinputs(train, filepath=None, io=0):
 	:param io: the index of the ouput I should use. If you have only one neuron, this is 0.
 	
 	"""
-	nlines = 4
+	nlines = 3
 	
 	fig = plt.figure(figsize=(3.3*train.net.ni, 3.5*nlines))
 	plt.figtext(0.5, 1.0, train.title(), ha="center", va="top")
