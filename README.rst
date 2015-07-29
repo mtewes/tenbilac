@@ -1,8 +1,8 @@
 Tenbilac
 ========
 
-- You have noisy multidimensional data, which depends on some (physical) explanatory parameters.
-- Given this data, you want to get *accurate* estimates for those parameters.
+- You have noisy multivariate data, which depend on some (physical) explanatory parameters.
+- Given the data, you want to get *accurate* estimates for those parameters.
 - It seems hard or impossible to write down any likelihood function for your data, say because the measurement process is very involved and/or depends on too many nuisance parameters.
 - But you are able to simulate the data rather easily, given the explanatory parameters.
 
