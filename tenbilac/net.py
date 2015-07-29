@@ -13,6 +13,7 @@ from . import layer
 from . import utils
 from . import err
 from . import act
+from . import data
 
 class Tenbilac():
 	"""
@@ -249,7 +250,7 @@ class Tenbilac():
 		if inputs.ndim != 3:
 			raise ValueError("Sorry, I only accept 3D input")
 
-		(inputs, outputsmask) = utils.demask(inputs, no=self.no)
+		(inputs, outputsmask) = data.demask(inputs, no=self.no)
 		
 		# We can simply run the network with the unmasked inputs:
 		
