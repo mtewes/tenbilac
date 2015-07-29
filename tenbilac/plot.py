@@ -153,7 +153,7 @@ def outdistribs(train, filepath=None):
 		ax.hist(thiso_trainoutputs, bins=50, histtype="step", color="black", label="Training batch")
 		ax.set_yscale('log')
 		ax.set_ylabel("Counts (reas and cases)")
-		ax.set_xlabel("Output '{0}'".format(net.onames[io]))
+		ax.set_xlabel("Pred. output for '{0}'".format(net.onames[io]))
 		
 		# The targets
 		thiso_valtargets = dat.valtargets[io,:].flatten()
@@ -162,7 +162,7 @@ def outdistribs(train, filepath=None):
 		ax.hist(thiso_valtargets, bins=20, histtype="step", color="red", label="Validation set")
 		ax.hist(thiso_traintargets, bins=20, histtype="step", color="black", label="Training batch")
 		ax.set_ylabel("Counts (cases)")
-		ax.set_xlabel("Targets for '{0}'".format(net.onames[io]))
+		ax.set_xlabel("Targets '{0}'".format(net.onames[io]))
 
 		# The prediction errors
 		thiso_valerrors = valerrors[:,io,:].flatten().compressed()
@@ -172,7 +172,7 @@ def outdistribs(train, filepath=None):
 		ax.hist(thiso_valerrors, bins=50, histtype="step", color="red", label="Validation set", range=histrange)
 		ax.hist(thiso_trainerrors, bins=50, histtype="step", color="black", label="Training batch", range=histrange)
 		ax.set_ylabel("Counts (reas and cases)")
-		ax.set_xlabel("Errors of '{0}'".format(net.onames[io]))
+		ax.set_xlabel("Errors of pred. '{0}'".format(net.onames[io]))
 		ax.set_yscale('log')
 		ax.set_xlim(histrange)
 
@@ -184,7 +184,7 @@ def outdistribs(train, filepath=None):
 		ax.hist(thiso_trainbiases, bins=50, histtype="step", color="black", label="Training batch")	
 		ax.set_yscale('log')	
 		ax.set_ylabel("Counts (cases)")
-		ax.set_xlabel("Bias of output '{0}'".format(net.onames[io]))
+		ax.set_xlabel("Bias of pred. for '{0}'".format(net.onames[io]))
 
 		# The stds
 		thiso_valstds = valstds[io,:].flatten().compressed()
@@ -194,7 +194,7 @@ def outdistribs(train, filepath=None):
 		ax.hist(thiso_trainstds, bins=50, histtype="step", color="black", label="Training batch")	
 		ax.set_yscale('log')	
 		ax.set_ylabel("Counts (cases)")
-		ax.set_xlabel("STD of output '{0}'".format(net.onames[io]))
+		ax.set_xlabel("STD of pred. for '{0}'".format(net.onames[io]))
 
 
 		# Against each other
@@ -203,8 +203,8 @@ def outdistribs(train, filepath=None):
 		assert thiso_valstds.size == thiso_valbiases.size
 		ax.plot(thiso_valbiases, thiso_valstds, marker=".", ms=2, ls="None", color="red", label="Validation set", rasterized=True)
 		ax.plot(thiso_trainbiases, thiso_trainstds, marker=".", ms=2, ls="None", color="black", label="Training batch", rasterized=True)	
-		ax.set_ylabel("STD of output '{0}'".format(net.onames[io]))
-		ax.set_xlabel("Bias of output '{0}'".format(net.onames[io]))
+		ax.set_ylabel("STD of pred. for '{0}'".format(net.onames[io]))
+		ax.set_xlabel("Bias of pred. for '{0}'".format(net.onames[io]))
 
 		
 		# The MSRB terms:
@@ -312,7 +312,7 @@ def errorinputs(train, filepath=None, io=0):
 		ax.plot(valinputs, valbiases, marker=".", color="red", ls="None", ms=1)
 		ax.axhline(0.0, color="black", lw=1, ls="--")
 		if ii == 0:
-			ax.set_ylabel("Bias of output '{0}'".format(net.onames[io]))
+			ax.set_ylabel("Bias of pred. for '{0}'".format(net.onames[io]))
 		else:
 			ax.set_yticklabels([]) # Hide y tick labels
 		#ax.set_xlabel("Input '{0}'".format(net.inames[ii]))
@@ -322,7 +322,7 @@ def errorinputs(train, filepath=None, io=0):
 		ax = plt.subplot(nlines, train.net.ni, 2*train.net.ni+ii+1)
 		ax.plot(valinputs, valstds, marker=".", color="red", ls="None", ms=1)
 		if ii == 0:
-			ax.set_ylabel("STD of output '{0}'".format(net.onames[io]))
+			ax.set_ylabel("STD of pred. for '{0}'".format(net.onames[io]))
 		else:
 			ax.set_yticklabels([]) # Hide y tick labels
 		ax.set_xlabel("Input '{0}'".format(net.inames[ii]))
