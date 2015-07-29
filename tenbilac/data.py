@@ -47,6 +47,7 @@ class Normer:
 			raise RuntimeError("Looks like you have more than 100 features or labels, this is probably a array format error !")
 			
 		if type in ["01", "-11"]:
+			# For this, we need to compute the min and max value for every feature, along the realizations and cases.
 		
 			if x.ndim == 3:# If we have several realizations:
 				mins = np.min(np.min(x, axis=0), axis=1) # Computes the min along the first and thrid axis.
@@ -62,11 +63,15 @@ class Normer:
 				
 		elif type == "std":
 			
-			if x.ndim == 3: # Use rollaxis to reshape array ?
-				raise ValueError("Not yet implemented")
+			if x.ndim == 3: # First using rollaxis to reshape array instead of using fancy reshape modes seemed safer...
+				xreshaped = np.rollaxis(x, axis=1) # brings the feature as first index.
+				xreshaped = np.reshape(xreshaped, (x.shape[1], -1)) # mixes reas and cases in second index.
+				avgs = np.mean(xreshaped, axis=1) # along reas and cases
+				stds = np.std(xreshaped, axis=1)
 				
-			avgs = np.mean(x, axis=1) # Along galaxies
-			stds = np.std(x, axis=1)
+			elif x.ndim == 2: # Easy !
+				avgs = np.mean(x, axis=1) # Along galaxies
+				stds = np.std(x, axis=1)
 						
 			self.a = avgs
 			self.b = stds
