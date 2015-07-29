@@ -8,9 +8,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def sig(x):
-	#return 1.0 / (1.0 + np.exp(-x))	# The actual sigmoid
+	return 1.0 / (1.0 + np.exp(-x))	# The actual sigmoid
+	
+			
+def sige(x):
 	return 2.0 / (1.0 + np.exp(-x)) - 1.0	# Making it even
-		
 		
 
 def tanh(x):
@@ -26,7 +28,7 @@ if __name__ == "__main__":
 	import matplotlib.pyplot as plt
 	
 	x = np.linspace(-5, 5, 100)
-	acts = [sig, tanh, iden]
+	acts = [sig, sige, tanh, iden]
 	
 	for act in acts:
 		plt.plot(x, act(x), label=act.__name__)
