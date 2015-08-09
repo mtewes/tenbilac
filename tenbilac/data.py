@@ -208,7 +208,7 @@ class Traindata:
 	Naming conventions:
 	fulltraininputs = the full training set
 	valinputs = the full validation set
-	traininputs = a potential "mini batch" subset of the full training set
+	traininputs = the current "mini batch" subset of the full training set (or the full training set, if no minibatch is set)
 		
 	"""
 

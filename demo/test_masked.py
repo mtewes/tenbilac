@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 import matplotlib.pyplot as plt
 
-
+"""
 # Test with 5 reas, 2 nodes, 3 cases.
 
 a = np.random.randn(5*2*3).reshape(5, 2, 3)
@@ -41,16 +41,28 @@ a.mask[1:,0,0] = True
 print np.std(a, axis=0)
 
 # OK it gives 0.0. All as exected.
+"""
+
+# Testing tile: Good, works as expected.
+a = np.ma.array([1, 2, 3, 4], mask=[True, False, False, False])
+
+print a
+print np.tile(a, 3)
+
+
 
 
 
 """
-np.ma.array([[1, 2], [3, 4]], mask=[[True, False], [False, False]])
+# HUGE WARNING: NP.RAVEL() SILENTLY IGNORES THE MASK !!!
+a = np.ma.array([[1, 2], [3, 4]], mask=[[True, False], [False, False]])
 
-b = np.tile(a, 5)
-print b.shape
+print a
 
-print b
+print np.ravel(a)
+
+print a.flatten()
+
 """
 
 
