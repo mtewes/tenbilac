@@ -122,7 +122,7 @@ class Training:
 		if self.name is not None:
 			return "Training '{name}': {auto} ({it} it, {tmin:.1f} min)".format(name=self.name, auto=str(self), it=self.optit, tmin=np.sum(self.optittimes)/60.0)
 		else:
-			return "{auto} ({it} it, {tmin:.1f} min)".format(auto=str(self), it=self.optit, tmin=np.sum(optittimes)/60.0)
+			return "{auto} ({it} it, {tmin:.1f} min)".format(auto=str(self), it=self.optit, tmin=np.sum(self.optittimes)/60.0)
 	
 	
 	def takeover(self, othertrain):
