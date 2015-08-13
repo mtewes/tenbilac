@@ -4,15 +4,15 @@ Tenbilac
 - You have noisy multivariate data, which depend on some (physical) explanatory parameters.
 - Given the data, you want to get *accurate* estimates for those parameters.
 - It seems hard or impossible to write down any likelihood function for your data, say because the measurement process is very involved and/or depends on too many nuisance parameters.
-- But you are able to simulate the data rather easily, given the explanatory parameters.
+- But you are able to simulate the data (including the noise) rather easily, given the explanatory parameters.
 
-Then Tenbilac gives you a fast and fully empirical point or interval estimator, tuned to minimize bias, no matter how crazy the noise in your data is. Even in 20 dimensions.
+Then Tenbilac should give you a fast and fully empirical point or interval estimator, tuned to minimize bias, no matter how crazy the noise in your data is. Even in 20 dimensions. **That's the plan.** The following figure, corresponding to the ``demo/size`` of Tenbilac, illustrates this in a 1D situation.
 
 .. image:: https://raw.githubusercontent.com/mtewes/tenbilac/master/sphinx/_static/tenbilac.png
 	:align: center
 	:alt: alternate text
 
-Warning: this is undocumented work in progress! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
+Warning: this is undocumented **work in progress**! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
 
 
 About
