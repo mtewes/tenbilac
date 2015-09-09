@@ -19,7 +19,7 @@ class Normer:
 	object to denorm stuff afterwards.
 	
 	This works with inputs (3D or 2D) and outputs or targets (2D), with indices
-	(realization, feature, galaxy) or (feature, galaxy).
+	(realization, feature, case) or (feature, case).
 	
 	All methods correctly work with masked arrays.
 	

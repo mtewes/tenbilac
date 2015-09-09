@@ -342,7 +342,7 @@ def errorinputs(train, filepath=None, io=0):
 #	Simply plots histograms of the different features
 #	Checks normalization
 #	
-#	:param data: 2D or 3D numpy array with (feature, gal) or (rea, feature, gal).
+#	:param data: 2D or 3D numpy array with (feature, case) or (rea, feature, case).
 #	:type data: numpy array
 #	
 #	"""

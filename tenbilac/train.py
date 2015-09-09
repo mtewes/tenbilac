@@ -20,7 +20,7 @@ from . import plot
 
 class Training:
 	"""
-	Holds together everthing related to the process of training a Tenbilac: the training data and the network.
+	Holds together everthing related to the process of training a Net: the training data and the network.
 	"""
 
 	

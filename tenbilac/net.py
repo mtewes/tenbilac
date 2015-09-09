@@ -1,5 +1,6 @@
 """
 This is Tenbilac!
+Net represent a "simple" network. See WNet if you're looking for weight predictions.
 """
 
 import numpy as np
@@ -15,7 +16,7 @@ from . import err
 from . import act
 from . import data
 
-class Tenbilac():
+class Net():
 	"""
 	Object representing a network made out of one or several hidden layers.
 	"""

@@ -15,14 +15,14 @@ def msb(predictions, targets):
 	"""
 	Mean square bias
 	
-	:param predictions: 3D array (realization, neuron, galaxy), should be appropiratedly masked (thus not directly the output of the net)
-	:param targets: 2D array (neuron, galaxy)
+	:param predictions: 3D array (realization, neuron, case), should be appropiratedly masked (thus not directly the output of the net)
+	:param targets: 2D array (neuron, case)
 	
 	"""
 	
 	if predictions.ndim == 3:
 	
-		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy)
+		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, case)
 		return np.mean(np.square(biases))
 	
 	else:
@@ -34,8 +34,8 @@ def msrb(predictions, targets, rawterms=False):
 	"""
 	Mean square relative bias
 	
-	:param predictions: 3D array (realization, neuron, galaxy), should be appropiratedly masked (thus not directly the output of the net)
-	:param targets: 2D array (neuron, galaxy)
+	:param predictions: 3D array (realization, neuron, case), should be appropiratedly masked (thus not directly the output of the net)
+	:param targets: 2D array (neuron, case)
 	
 	:param rawterms: if True, returns the "RB" of "MSRB" as (potentially masked) 2D array.
 	
@@ -47,11 +47,11 @@ def msrb(predictions, targets, rawterms=False):
 		# Just as a test that this was not forgotten, no real need here.
 		# No need, for this, for sure it also works without masks...
 		
-		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, galaxy) : masked, but probably all masks are False.
+		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, case) : masked, but probably all masks are False.
 		stds = np.std(predictions, axis=0) # idem
 		
 		if type(predictions) == np.ma.MaskedArray:
-			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0) + 0.0 # Number of realizations, 0.0 makes this floats # This is 2D (label, galaxy)
+			reacounts = predictions.shape[0] - np.sum(predictions.mask, axis=0) + 0.0 # Number of realizations, 0.0 makes this floats # This is 2D (label, case)
 		elif type(predictions) == np.ndarray:
 			reacounts = predictions.shape[0] + 0.0
 		else:
@@ -75,10 +75,10 @@ def msrb(predictions, targets, rawterms=False):
 
 def mse(predictions, targets):
 	"""
-	Standard MSE (mean square error), simply treats multiple realizations as if they were independent galaxies	
+	Standard MSE (mean square error), simply treats multiple realizations as if they were independent cases	
 	
-	:param predictions: 2D array (neuron, galaxy) or 3D array (realization, neuron, galaxy)
-	:param targets: 2D array (neuron, galaxy)
+	:param predictions: 2D array (neuron, case) or 3D array (realization, neuron, case)
+	:param targets: 2D array (neuron, case)
 
 	"""
 	
@@ -97,7 +97,7 @@ def msre(predictions, targets):
 
 	if predictions.ndim == 3:
 		
-		stds = np.std(predictions, axis=0) # 2D, (label, galaxy)
+		stds = np.std(predictions, axis=0) # 2D, (label, case)
 
 		return np.mean(np.square((predictions - targets) / stds))
 	

@@ -15,9 +15,9 @@ from . import err
 from . import act
 from . import data
 
-class Net():
+class WNet():
 	"""
-	Object representing a network made out of one or several hidden layers.
+	
 	"""
 	
 	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", name=None, inames=None, onames=None):

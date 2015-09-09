@@ -76,16 +76,16 @@ class Layer():
 		This means that np.dot determines the order of indices, as following.
 		
 		If inputs is 1D,
-			the input is just an array of features for a single galaxy
+			the input is just an array of features for a single case
 			the output is a 1D array with the output of each neuron
 			
 		If inputs is 2D,
-			input indices: (feature, galaxy)
-			output indices: (neuron, galaxy) -> so this can be fed into the next layer...
+			input indices: (feature, case)
+			output indices: (neuron, case) -> so this can be fed into the next layer...
 		
 		If inputs is 3D, 
-			input indices: (realization, feature, galaxy)
-			output indices: (realization, neuron, galaxy)
+			input indices: (realization, feature, case)
+			output indices: (realization, neuron, case)
 			
 		"""
 		
@@ -101,7 +101,7 @@ class Layer():
 			
 			# Doing this:
 			# self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1)))
-			# ... gives ouput indices (neuron, realization, galaxy)
+			# ... gives ouput indices (neuron, realization, case)
 			# We need to change the order of those indices:
 			
 			return np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
