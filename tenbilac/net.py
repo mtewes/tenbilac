@@ -91,7 +91,7 @@ class Net():
 		if self.name is None:
 			return autotxt
 		else:
-			return "'name' {autotxt}".format(name=name, autotxt=autotxt)
+			return "'{name}' {autotxt}".format(name=self.name, autotxt=autotxt)
 
 
 	
@@ -160,7 +160,7 @@ class Net():
 		#np.random.shuffle(indices)
 		#return ref[indices]
 
-		assert ref.size == self.nparams()
+		assert ind == self.nparams()
 		return ref
 
 
