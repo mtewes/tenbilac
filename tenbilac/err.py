@@ -91,7 +91,7 @@ def mse(predictions, targets):
 
 def msre(predictions, targets):
 	"""
-	Weighted MSE
+	MSE with normalization by the scatter along the realizations (as MSRB is for MSB)
 
 	"""
 
@@ -104,4 +104,34 @@ def msre(predictions, targets):
 	else:
 		raise ValueError("Wrong pred shape")
 
+
+
+
+def msbw(predictions, targets):
+	"""
+	Mean square bias with weights
+	This is the first errorfunction of a new type, it compares the weighted average of the predictions with the targets.
+	
+	There should be twice more prediction "neurons" than targets. The second half of the predictions is interpreted as weights
+	
+	:param predictions: 3D array (realization, neuron, case), should be appropiratedly masked (thus not directly the output of the net)
+	:param targets: 2D array (neuron, case)
+	
+	"""
+	
+	if predictions.ndim == 3:
+	
+		nt = targets.shape[0] # the number of targets = number of "predicted parameters" = number of weights for these outputs
+		assert predictions.shape[1] == 2 * nt # Indeed, these are the predicted parameters and the corresponding weights.
+		
+		predparams = predictions[:,:nt,:]
+		predweights = 10**predictions[:,nt:,:]
+		assert predparams.shape == predweights.shape
+	
+		biases = np.mean(predparams * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+	
+		return np.mean(np.square(biases))
+	
+	else:
+		raise ValueError("Wrong pred shape")
 	
