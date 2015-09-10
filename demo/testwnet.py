@@ -7,70 +7,45 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 
+ni = 1
 
-wnet = tenbilac.wnet.WNet(ni=2, nhs=[3, 3], name="test")
+wnet = tenbilac.wnet.WNet(ni=ni, nhs=[3, 3], name="test", netokwargs={"onlyid":True})
 
-print wnet.nparams()
-
-
-print wnet.report()
+#print wnet.nparams()
+#print wnet.report()
 
 
 ref = wnet.get_params_ref()
 
 wnet.addnoise()
 
-print ref
-
-print wnet.report()
-
-
+#print ref
+#print wnet.report()
 wnet.setini()
-
-
-print ref
-
 print wnet.report()
 
-"""
-params = net.get_params_ref()
-
-print params
-
-net.addnoise()
-
-print params
 
 
-net.setidentity()
-
-print params
-
-print net.report()
-
-ni = 2
-ngal = 500
-nrea = 10
+ncas = 3
+nrea = 5
 no = 1
 
-
-#inputs = np.random.randn(ni * ngal).reshape((ni, ngal))
-inputs = np.ones(ni * ngal * nrea).reshape((nrea, ni, ngal))
+inputs = np.random.randn(nrea * ni * ncas).reshape((nrea, ni, ncas))
 
 
-#inputs = np.array([[1, 1, -1], [2, 2, -2]])
-#inputs = np.array([1, 2])
+#print inputs
+
+outputs = wnet.run(inputs)
 
 
-print "inputs shape", inputs.shape
+#print outputs
 
-params[0] = 10
-params[9] = 20
-params[21] = 20
+targets = np.ones(no * ncas).reshape((no, ncas))
 
-print net.report()
 
-outputs = net.run(inputs)
+print tenbilac.err.msbw(outputs, targets)
+
+"""
 print "ouputs shape ", outputs.shape
 
 
