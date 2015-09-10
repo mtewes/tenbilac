@@ -155,17 +155,27 @@ class WNet():
 
 	def run(self, inputs):
 		"""
-		Propagates input through the network "as fast as possible".
-		This works for 1D, 2D, and 3D inputs, see layer.run().
-		Note that this forward-running does not care about the fact that some of the inputs might be masked!
-		Use predict() if you have masked arrays.
+		Similar to Net.run().
+		We compute outputs for both Nets, and combine these into a single array, mimicing a single Net with twice the number of outputs.
+		So for the outputs, along the second dimension (nodes), we first have the normal outputs, and then the associated weights.
 		"""
 		
-		output = inputs
-		for l in self.layers:
-			output = l.run(output)
-		return output
-	
+		if inputs.ndim != 3:
+			raise ValueError("Sorry, for WNet I want 3D inputs only.")
+		
+		os = self.neto.run(inputs)
+		ws = self.netw.run(inputs)
+		
+		assert os.shape == (inputs.shape[0], self.neto.no, inputs.shape[2])
+		assert ws.shape == (inputs.shape[0], self.netw.no, inputs.shape[2])
+		
+		# And we stack the two parts 
+		outputs = np.concatenate((os, ws), axis=1)
+		
+		assert outputs.shape == (inputs.shape[0], self.neto.no + self.netw.no, inputs.shape[2])
+		
+		return outputs
+		
 			
 	
 	def predict(self, inputs):
@@ -180,6 +190,8 @@ class WNet():
 		
 		"""
 		
+		# To be adapted for WNet...
+		"""
 		logger.info("Predicting with input = {intype} of shape {inshape}".format(
 			intype=str(type(inputs)), inshape=str(inputs.shape)))
 
@@ -199,4 +211,4 @@ class WNet():
 			outputs = np.ma.array(outputs, mask=outputsmask)
 		
 		return outputs
-		
+		"""
