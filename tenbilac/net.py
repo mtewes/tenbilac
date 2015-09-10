@@ -132,27 +132,27 @@ class Net():
 		ref = np.empty(self.nparams())
 		ind = 0
 		
-		if schema == 1: # First layer first, weights and biases.
+#		if schema == 1: # First layer first, weights and biases.
+#		
+#			for l in self.layers:
+#				ref[ind:ind+(l.nn*l.ni)] = l.weights.flatten() # makes a copy
+#				ref[ind+(l.nn*l.ni):ind+l.nparams()] = l.biases.flatten() # makes a copy
+#				l.weights = ref[ind:ind+(l.nn*l.ni)].reshape(l.nn, l.ni) # a view
+#				l.biases = ref[ind+(l.nn*l.ni):ind+l.nparams()] # a view
+#				ind += l.nparams()
 		
-			for l in self.layers:
-				ref[ind:ind+(l.nn*l.ni)] = l.weights.flatten() # makes a copy
-				ref[ind+(l.nn*l.ni):ind+l.nparams()] = l.biases.flatten() # makes a copy
-				l.weights = ref[ind:ind+(l.nn*l.ni)].reshape(l.nn, l.ni) # a view
-				l.biases = ref[ind+(l.nn*l.ni):ind+l.nparams()] # a view
-				ind += l.nparams()
+		#elif schema == 2: # Starting at the end, biases before weights
 		
-		elif schema == 2: # Starting at the end, biases before weights
-		
-			for l in self.layers[::-1]:
+		for l in self.layers[::-1]:
 			
-				ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
-				ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
-				l.biases = ref[ind:ind+l.nn] # a view
-				l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
-				ind += l.nparams()
+			ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
+			ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
+			l.biases = ref[ind:ind+l.nn] # a view
+			l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
+			ind += l.nparams()
 			
-		else:
-			raise ValueError("Unknown schema")
+		#else:
+		#	raise ValueError("Unknown schema")
 			
 		
 		# Note that such tricks do not work, as indexing by indices creates copies:
@@ -223,8 +223,19 @@ class Net():
 		Propagates input through the network "as fast as possible".
 		This works for 1D, 2D, and 3D inputs, see layer.run().
 		Note that this forward-running does not care about the fact that some of the inputs might be masked!
-		Use predict() if you have masked arrays.
+		In fact it **ignores** the mask and will simply compute unmasked outputs.
+		Use predict() if you have masked inputs and want to "propagate" the mask appropriatedly.
 		"""
+		
+		# Normally we should go ahead and see if it fails, but in this particular case it's more helpful to test ahead:
+		
+		if inputs.ndim == 3:
+			if inputs.shape[1] != self.ni:
+				raise ValueError("Inputs with {ni} features (shape = {shape}) are not compatible with {me}".format(ni=inputs.shape[1], shape=inputs.shape, me=str(self)))
+		elif inputs.ndim == 2:
+			if inputs.shape[0] != self.ni:
+				raise ValueError("Inputs with {ni} features (shape = {shape}) are not compatible with {me}".format(ni=inputs.shape[0],shape=inputs.shape, me=str(self)))
+
 		
 		output = inputs
 		for l in self.layers:
