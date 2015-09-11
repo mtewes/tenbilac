@@ -136,6 +136,16 @@ class WNet():
 		return ref
 
 
+	def get_paramlabels(self):
+		"""
+		Returns a list with labels describing the params.
+		
+		"""
+		paramlabels = []
+		paramlabels.extend(["neto_" + l for l in self.neto.get_paramlabels()])
+		paramlabels.extend(["netw_" + l for l in self.netw.get_paramlabels()])
+		return paramlabels
+		
 
 	def addnoise(self, **kwargs):
 		"""
