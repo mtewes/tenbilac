@@ -120,7 +120,7 @@ class Net():
 		return sum([l.nparams() for l in self.layers])
 		
 	
-	def get_params_ref(self, schema=2):
+	def get_params_ref(self):
 		"""
 		Get a single 1D numpy array containing references to all network weights and biases.
 		Note that each time you call this, you loose the "connection" to the ref from any previous calls.
@@ -165,7 +165,7 @@ class Net():
 
 
 
-	def get_paramlabels(self, schema=2):
+	def get_paramlabels(self):
 		"""
 		Returns a list with labels describing the params. This is for humans and plots.
 		Note that plots might expect these labels to have particular formats.
@@ -174,11 +174,11 @@ class Net():
 		paramlabels=[]
 		ind = 0
 		
-		if schema == 2:
-			for l in self.layers[::-1]:
+		#if schema == 2:
+		for l in self.layers[::-1]:
 				
-				paramlabels.extend(l.nn*["layer-{l.name}_bias".format(l=l)])
-				paramlabels.extend(l.nn*l.ni*["layer-{l.name}_weight".format(l=l)])
+			paramlabels.extend(l.nn*["layer-{l.name}_bias".format(l=l)])
+			paramlabels.extend(l.nn*l.ni*["layer-{l.name}_weight".format(l=l)])
 		
 		assert len(paramlabels) == self.nparams()
 		
