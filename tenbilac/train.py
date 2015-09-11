@@ -20,7 +20,7 @@ from . import plot
 
 class Training:
 	"""
-	Holds together everthing related to the process of training a Net: the training data and the network.
+	Holds together everthing related to the process of training a Net (or a WNet): the training data and the network.
 	"""
 
 	
@@ -40,7 +40,12 @@ class Training:
 		
 		# Let's check compatibility between those two!
 		assert net.ni == self.dat.getni()
-		assert net.no == self.dat.getno()
+		if errfctname in ["mse", "msb", "msrb", "msre"]:
+			assert net.no == self.dat.getno()
+		elif errfctname in ["msbw"]:
+			assert net.no == 2*self.dat.getno()
+		else:
+			logger.warning("Unknown error function, will blindly go ahead...")
 				
 		# Setting up the cost function
 		self.errfctname = errfctname
@@ -98,7 +103,7 @@ class Training:
 		Replaces the network object
 		"""
 		self.net = net
-		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
+		self.params = self.net.get_params_ref() # Fast connection to the network parameters
 		
 	
 
