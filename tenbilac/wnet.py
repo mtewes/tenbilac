@@ -43,6 +43,12 @@ class WNet():
 		
 		"""
 	
+		self.ni = ni
+		self.no = 2*no	# For every output we also have a weight. Assuming this is mandatory for the
+						# way we return outputs, and so we'll stick to this and not make it more complicated.
+						# However we do not rely on the fact the that two Nets are "similar"!
+						# So it might be that the two nets have different numbers of params!
+	
 		logger.info("Building a WNet...")
 		self.neto = net.Net(ni, nhs, no=no, name="neto", inames=inames, onames=onames, **netokwargs)
 		self.netw = net.Net(ni, nhs, no=no, name="netw", inames=inames, onames=onames, **netwkwargs)
