@@ -28,7 +28,7 @@ class WNet():
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
 		:type nhs: tuple
-		:param no: Number of ouput neurons
+		:param no: Number of ouput neurons *NOT* taking into account the weights.
 			
 		:param name: if None, will be set automatically
 		:type name: string
@@ -97,43 +97,52 @@ class WNet():
 		return self.neto.nparams() + self.netw.nparams() 
 		
 	
-	def get_params_ref(self):
+	def get_params_ref(self, mode=None):
 		"""
 		Get a single 1D numpy array containing references to all network weights and biases.
 		Note that each time you call this, you loose the "connection" to the ref from any previous calls.
 		
-		Did not manage to get this working by reusing the equivalent functions of the two Net objects.
-		So redoing from scratch.
-		We put the "o" params first, then the "w" params.
+		:param mode: switch to get only the params for the predictive outputs ("o"), or only the params for the weights ("w"), or both (None)
+			
+		For mode "None", I did not manage to get this working by reusing the equivalent functions of the two Net objects.
+		So redoing from scratch. We put the "o" params first, then the "w" params.
 		
 		"""
 		
-		ref = np.empty(self.nparams())
+		if mode == "o":
+			return self.neto.get_params_ref()
+		elif mode == "w":
+			return self.netw.get_params_ref()
+		elif mode == None:
 		
-		ind = 0
+			ref = np.empty(self.nparams())
+			ind = 0
 		
-		# We start with the "o" params:
-		for l in self.neto.layers[::-1]:
+			# We start with the "o" params:
+			for l in self.neto.layers[::-1]:
 			
-			ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
-			ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
-			l.biases = ref[ind:ind+l.nn] # a view
-			l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
-			ind += l.nparams()
-		
-		# And now the "w" params:
-		assert ind == self.neto.nparams()
-		
-		for l in self.netw.layers[::-1]:
+				ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
+				ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
+				l.biases = ref[ind:ind+l.nn] # a view
+				l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
+				ind += l.nparams()
 			
-			ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
-			ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
-			l.biases = ref[ind:ind+l.nn] # a view
-			l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
-			ind += l.nparams()
-	
-		assert ind == self.nparams()
-		return ref
+			# And now the "w" params:
+			assert ind == self.neto.nparams()
+			
+			for l in self.netw.layers[::-1]:
+				
+				ref[ind:ind+l.nn] = l.biases.flatten() # makes a copy
+				ref[ind+l.nn:ind+l.nparams()] = l.weights.flatten() # makes a copy
+				l.biases = ref[ind:ind+l.nn] # a view
+				l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
+				ind += l.nparams()
+		
+			assert ind == self.nparams()
+			return ref
+		
+		else:
+			raise ValueError("Unknown get_params_ref mode !")
 
 
 	def get_paramlabels(self):

@@ -6,6 +6,7 @@ import numpy as np
 import scipy.optimize
 from datetime import datetime
 import os
+import copy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -104,8 +105,30 @@ class Training:
 		"""
 		self.net = net
 		self.params = self.net.get_params_ref() # Fast connection to the network parameters
+		self.paramslice = slice(None) # By default, all params are free to be optimized
 		
-	
+	def set_paramslice(self, mode=None):
+		"""
+		The paramslide allows to specify which params you want to be optimized.
+		This is relevant when training a WNet.
+		We use a slice of this. Indexing with a boolean array ("mask") seems nicer, but fancy indexing does not preserve
+		the references. Hence using a slice is a good compromise for speed.
+		"""
+		#self.paramslice[0:self.net.neto.nparams()] = False #= self.net.get_params_ref(mode=mode)
+		
+		if mode == "o": # the slice selects only the params of the "ouputs"
+			self.paramslice = slice(0, self.net.neto.nparams())
+		elif mode == "w": # Idem but for the weights
+			self.paramslice = slice(self.net.neto.nparams(), self.net.nparams())
+		elif mode == None: # Empty slice, use all params
+			self.paramslice = slice(None)
+		else:
+			raise ValueError("Unknown mode!")
+		
+		logger.info("Set paramslice to mode '{}' : {}/{} params are free to be optimized.".format(
+			mode, len(self.params[self.paramslice]), self.net.nparams())
+			)
+		
 
 	def __str__(self):
 		"""
@@ -242,10 +265,13 @@ class Training:
 		secondstaken = (now - self.iterationstarttime).total_seconds()
 		callstaken = self.optitcall 
 		
+		# Not sure if it is needed to update the params (of if the optimizer already did it), but it cannot harm and is fast:
+		self.params[self.paramslice] = args[0] # Updates the network parameters
+		
 		self.optittimes.append(secondstaken)
 		self.optiterrs_train.append(self.opterr)
 		self.optitcalls.append(self.optcall)
-		self.optitparams.append(args[0])
+		self.optitparams.append(copy.deepcopy(self.params)) # We add a copy of the current params
 		
 		# Now we evaluate the cost on the validation set:
 		valerr = self.valcost()
@@ -276,7 +302,7 @@ class Training:
 		This gets called repeatedly by the optimizers.
 		"""
 	
-		self.params[:] = p # Updates the network parameters
+		self.params[self.paramslice] = p # Updates the network parameters
 		outputs = self.net.run(self.dat.traininputs) # This is not a masked array!
 		if self.dat.trainoutputsmask is None:
 			err = self.errfct(outputs, self.dat.traintargets)
@@ -296,7 +322,7 @@ class Training:
 
 
 	def currentcost(self):
-		return self.cost(p=self.params)
+		return self.cost(p=self.params[self.paramslice])
 
 	def testcost(self):
 		"""
@@ -347,7 +373,7 @@ class Training:
 		logger.info("Starting BFGS for {0} iterations (maximum)...".format(maxiter))
 		
 		optres = scipy.optimize.fmin_bfgs(
-			self.cost, self.params,
+			self.cost, self.params[self.paramslice],
 			fprime=None,
 			maxiter=maxiter, gtol=gtol,
 			full_output=True, disp=True, retall=False, callback=self.callback)
