@@ -13,7 +13,7 @@ net.setini()
 
 traindata = tenbilac.data.Traindata(data["norminp"], data["tar"], valfrac=0.5, shuffle=True)
 
-train = tenbilac.train.Training(net, traindata, errfctname="msbw")
+train = tenbilac.train.Training(net, traindata, errfctname="msbwnet")
 
 #train.set_paramslice(mode="o")
 #train.minibatch_bfgs(mbsize=100, mbloops=3, maxiter=30)
@@ -26,6 +26,6 @@ train.net.neto.addnoise(wscale=0.1, bscale=0.1)
 train.minibatch_bfgs(mbsize=250, mbloops=1, maxiter=100)
 
 
-train.save("train_msbw.pkl", keepdata=True)
+train.save("train_msbwnet.pkl", keepdata=True)
 
 

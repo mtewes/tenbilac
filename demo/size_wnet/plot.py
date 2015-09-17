@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 data = tenbilac.utils.readpickle("data.pkl")
-train = tenbilac.utils.readpickle("train_msbw.pkl")
+train = tenbilac.utils.readpickle("train_msbwnet.pkl")
 #train = tenbilac.utils.readpickle("train_msbw_no_w.pkl")
 
 # Making predictions
