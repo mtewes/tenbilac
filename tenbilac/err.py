@@ -1,6 +1,8 @@
 """
 Error functions
 These should work both on unmasked and on masked arrays "as expected".
+
+The typical call is fct(predictions, targets, auxinputs), where auxinputs can be left out if the error function does not use any auxinputs.
 """
 
 import numpy as np
@@ -11,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 	
-def msb(predictions, targets):
+def msb(predictions, targets, auxinputs=None):
 	"""
 	Mean square bias
 	
@@ -30,7 +32,7 @@ def msb(predictions, targets):
 
 
 	
-def msrb(predictions, targets, rawterms=False):
+def msrb(predictions, targets, auxinputs=None, rawterms=False):
 	"""
 	Mean square relative bias
 	
@@ -73,7 +75,7 @@ def msrb(predictions, targets, rawterms=False):
 	
 
 
-def mse(predictions, targets):
+def mse(predictions, targets, auxinputs=None):
 	"""
 	Standard MSE (mean square error), simply treats multiple realizations as if they were independent cases	
 	
@@ -89,7 +91,7 @@ def mse(predictions, targets):
 
 
 
-def msre(predictions, targets):
+def msre(predictions, targets, auxinputs=None):
 	"""
 	MSE with normalization by the scatter along the realizations (as MSRB is for MSB)
 
@@ -107,9 +109,9 @@ def msre(predictions, targets):
 
 
 
-def msbw(predictions, targets):
+def msbwnet(predictions, targets, auxinputs=None):
 	"""
-	Mean square bias with weights
+	Mean square bias with weights, for training a WNet.
 	This is the first errorfunction of a new type, it compares the weighted average of the predictions with the targets.
 	
 	There should be twice more prediction "neurons" than targets. The second half of the predictions is interpreted as weights
@@ -135,3 +137,31 @@ def msbw(predictions, targets):
 	else:
 		raise ValueError("Wrong pred shape")
 	
+
+
+def msbw(predictions, targets, auxinputs):
+	"""
+	This errorfct is for Nets predicting weights only. It expresses the mean square weighted bias of the auxinputs
+	
+	The predictions should be masked, auxinputs as well. Targets are usually not masked.
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	predweights = 10**predictions
+	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
+	
+	
+
+
+
+
+
