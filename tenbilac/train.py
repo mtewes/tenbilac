@@ -109,9 +109,9 @@ class Training:
 		
 	def set_paramslice(self, mode=None):
 		"""
-		The paramslide allows to specify which params you want to be optimized.
-		This is relevant when training a WNet.
-		We use a slice of this. Indexing with a boolean array ("mask") seems nicer, but fancy indexing does not preserve
+		The paramslice allows to specify which params you want to be optimized.
+		This is relevant for instance when training a WNet.
+		We use a slice of this. Indexing with a boolean array ("mask") would seem nicer, but fancy indexing does not preserve
 		the references. Hence using a slice is a good compromise for speed.
 		"""
 		#self.paramslice[0:self.net.neto.nparams()] = False #= self.net.get_params_ref(mode=mode)
@@ -303,11 +303,14 @@ class Training:
 		"""
 	
 		self.params[self.paramslice] = p # Updates the network parameters
+		
+		# Compute the outputs
 		outputs = self.net.run(self.dat.traininputs) # This is not a masked array!
-		if self.dat.trainoutputsmask is None:
-			err = self.errfct(outputs, self.dat.traintargets)
-		else:
-			err = self.errfct(np.ma.array(outputs, mask=self.dat.trainoutputsmask), self.dat.traintargets)
+		
+		# And now evaluate the error (cost) function.
+		if self.dat.trainoutputsmask is not None:
+			outputs = np.ma.array(outputs, mask=self.dat.trainoutputsmask)
+		err = self.errfct(outputs, self.dat.traintargets, auxinputs=self.dat.trainauxinputs)
 			
 		self.opterr = err
 		self.optcall += 1
