@@ -237,7 +237,7 @@ class Traindata:
 		
 		if inputs.ndim != 3 and targets.ndim != 2:
 			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
-		if inputs.shape[2] != targets.shape[1]. # Checking for same number of cases
+		if inputs.shape[2] != targets.shape[1] : # Checking for same number of cases
 			raise ValueError("Shape of inputs {} not compatible with targets {}".format(inputs.shape, targets.shape))
 		if type(targets) != np.ndarray:
 			raise ValueError("Sorry, targets should not be masked")
