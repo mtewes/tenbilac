@@ -360,12 +360,12 @@ class Training:
 		
 	
 	
-	def minibatch_bfgs(self, mbsize=100, mbloops=10, **kwargs):
+	def minibatch_bfgs(self, mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
 		
 		for loopi in range(mbloops):
 			if mbloops > 1:
 				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi+1, mbloops=mbloops))
-			self.dat.random_minibatch(mbsize=mbsize)
+			self.dat.random_minibatch(mbsize=mbsize, mbfrac=mbfrac)
 			self.optbatchchangeits.append(self.optit) # We record this minibatch change
 			self.bfgs(**kwargs)
 			

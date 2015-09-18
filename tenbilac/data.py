@@ -391,25 +391,32 @@ class Traindata:
 		self.trainauxinputs = self.fulltrainauxinputs
 
 
-	def random_minibatch(self, mbsize=10):
+	def random_minibatch(self, mbsize=None, mbfrac=0.1):
 		"""
 		Selects a random minibatch of the full training set
-		:param mbsize: if None, will call fullbatch.
+		:param mbsize: if given, I will select a minibatch of this size.
+		:param mbfrac: same parameter, but expressed as fraction of the size of the fulltrain sample. Note that mbsize overwrites this, if given.
 		"""
 		
-		if mbsize is None:
-			self.fullbatch()
-			return
+		if mbsize is None and mbfrac is None:
+			raise RuntimeError("Please give a mbsize or mbfrac!")
 		
 		nfulltrain = self.getnfulltrain()
-		if mbsize > nfulltrain:
-			raise RuntimeError("Cannot select {mbsize} among {nfulltrain}".format(mbsize=mbsize, nfulltrain=nfulltrain))
+		
+		if mbfrac != None:
+			finalmbsize = int(mbfrac * nfulltrain)
+		if mbsize != None: # If given, we overwrite the mbfrac computation!
+			finalmbsize = mbsize
 		
 		
-		logger.info("Randomly selecting new minibatch of {mbsize} among {nfulltrain} cases...".format(mbsize=mbsize, nfulltrain=nfulltrain))
+		if finalmbsize > nfulltrain:
+			raise RuntimeError("Cannot select {finalmbsize} among {nfulltrain}".format(finalmbsize=finalmbsize, nfulltrain=nfulltrain))
+		
+		
+		logger.info("Randomly selecting new minibatch of {finalmbsize} (mbfrac={mbfrac}) among {nfulltrain} cases...".format(finalmbsize=finalmbsize, mbfrac=mbfrac, nfulltrain=nfulltrain))
 		caseindexes = np.arange(nfulltrain)
 		np.random.shuffle(caseindexes)
-		caseindexes = caseindexes[0:mbsize]
+		caseindexes = caseindexes[0:finalmbsize]
 			
 		self.traininputs = self.fulltraininputs[:,:,caseindexes]
 		self.traintargets = self.fulltraintargets[:,caseindexes]
