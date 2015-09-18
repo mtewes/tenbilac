@@ -374,7 +374,7 @@ class Training:
 	def bfgs(self, maxiter=100, gtol=1e-8):
 		
 		self.start()
-		logger.info("Starting BFGS for {0} iterations (maximum)...".format(maxiter))
+		logger.info("Starting BFGS for {} iterations (maximum) with gtol={}...".format(maxiter, gtol))
 		
 		optres = scipy.optimize.fmin_bfgs(
 			self.cost, self.params[self.paramslice],
