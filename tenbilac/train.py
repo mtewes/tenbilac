@@ -225,7 +225,7 @@ class Training:
 			suffix = "_optit{0:05d}".format(self.optit)
 		
 		logger.info("Making and writing plots, with suffix '{}'...".format(suffix))
-		plot.paramscurve(self, os.path.join(dirpath, "paramscurve"+suffix+".png"))
+		plot.sumevo(self, os.path.join(dirpath, "sumevo"+suffix+".png"))
 		plot.outdistribs(self, os.path.join(dirpath, "outdistribs"+suffix+".png"))
 		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
 		logger.info("Done with plots")

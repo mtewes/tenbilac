@@ -33,10 +33,10 @@ class Normer:
 		self.type = type
 		
 		if isinstance(x, np.ma.MaskedArray):
-			logger.info("Building Normer with a masked array of shape {0} and {1} masked values".format(str(x.shape), np.sum(x.mask)))
+			logger.info("Building Normer of type '{}' with a masked array of shape {} and {} masked values".format(self.type, str(x.shape), np.sum(x.mask)))
 			#np.ma.set_fill_value(x, 1.e20) # To notice things if the array gets filled by error.
 		elif isinstance(x, np.ndarray):
-			logger.info("Building Normer with an unmasked array of shape {0}".format((x.shape)))
+			logger.info("Building Normer of type '{}' with an unmasked array of shape {}".format(self.type, x.shape))
 		else:
 			raise ValueError("x is not a numpy array")
 		
@@ -79,7 +79,7 @@ class Normer:
 		else:
 			raise RuntimeError("Unknown Normer type")		
 		
-		logger.info(str(self))
+		#logger.info(str(self))
 		
 
 	def __str__(self):
