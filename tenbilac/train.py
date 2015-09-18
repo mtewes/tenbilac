@@ -41,9 +41,9 @@ class Training:
 		
 		# Let's check compatibility between those two!
 		assert net.ni == self.dat.getni()
-		if errfctname in ["mse", "msb", "msrb", "msre"]:
+		if errfctname in ["mse", "msb", "msrb", "msre", "msbw"]:
 			assert net.no == self.dat.getno()
-		elif errfctname in ["msbw"]:
+		elif errfctname in ["msbwnet"]:
 			assert net.no == 2*self.dat.getno()
 		else:
 			logger.warning("Unknown error function, will blindly go ahead...")
@@ -351,10 +351,11 @@ class Training:
 		Evaluates the cost function on the validation set.
 		"""
 		outputs = self.net.run(self.dat.valinputs) # This is not a masked array!
-		if self.dat.valoutputsmask is None:
-			err = self.errfct(outputs, self.dat.valtargets)
-		else:
-			err = self.errfct(np.ma.array(outputs, mask=self.dat.valoutputsmask), self.dat.valtargets)
+		if self.dat.valoutputsmask is not None:
+			outputs = np.ma.array(outputs, mask=self.dat.valoutputsmask)
+		
+		err = self.errfct(outputs, self.dat.valtargets, auxinputs=self.dat.valauxinputs)
+		
 		return err
 		
 	

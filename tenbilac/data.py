@@ -406,7 +406,7 @@ class Traindata:
 			raise RuntimeError("Cannot select {mbsize} among {nfulltrain}".format(mbsize=mbsize, nfulltrain=nfulltrain))
 		
 		
-		logger.info("Randomly seleting new minibatch of {mbsize} among {nfulltrain} cases...".format(mbsize=mbsize, nfulltrain=nfulltrain))
+		logger.info("Randomly selecting new minibatch of {mbsize} among {nfulltrain} cases...".format(mbsize=mbsize, nfulltrain=nfulltrain))
 		caseindexes = np.arange(nfulltrain)
 		np.random.shuffle(caseindexes)
 		caseindexes = caseindexes[0:mbsize]
