@@ -19,7 +19,7 @@ class Normer:
 	object to denorm stuff afterwards.
 	
 	This works with inputs (3D or 2D) and outputs or targets (2D), with indices
-	(realization, feature, galaxy) or (feature, galaxy).
+	(realization, feature, case) or (feature, case).
 	
 	All methods correctly work with masked arrays.
 	
@@ -33,10 +33,10 @@ class Normer:
 		self.type = type
 		
 		if isinstance(x, np.ma.MaskedArray):
-			logger.info("Building Normer with a masked array of shape {0} and {1} masked values".format(str(x.shape), np.sum(x.mask)))
+			logger.info("Building Normer of type '{}' with a masked array of shape {} and {} masked values".format(self.type, str(x.shape), np.sum(x.mask)))
 			#np.ma.set_fill_value(x, 1.e20) # To notice things if the array gets filled by error.
 		elif isinstance(x, np.ndarray):
-			logger.info("Building Normer with an unmasked array of shape {0}".format((x.shape)))
+			logger.info("Building Normer of type '{}' with an unmasked array of shape {}".format(self.type, x.shape))
 		else:
 			raise ValueError("x is not a numpy array")
 		
@@ -70,7 +70,7 @@ class Normer:
 				stds = np.std(xreshaped, axis=1)
 				
 			elif x.ndim == 2: # Easy !
-				avgs = np.mean(x, axis=1) # Along galaxies
+				avgs = np.mean(x, axis=1) # Along cases
 				stds = np.std(x, axis=1)
 						
 			self.a = avgs
@@ -79,7 +79,7 @@ class Normer:
 		else:
 			raise RuntimeError("Unknown Normer type")		
 		
-		logger.info(str(self))
+		#logger.info(str(self))
 		
 
 	def __str__(self):
@@ -199,26 +199,35 @@ class Traindata:
 	A class to hold training data so that it can be efficiently used by Tenbilac.
 	It has methods to set validation data, swap minibatches etc.
 	
-	Here we avoid masked arrays. Instead, we carry around boolean masks to be used by the error functions
+	
+	Here we deal with avoiding masked arrays for the Net. Instead, we carry around boolean masks to be used by the error functions
 	after the unmasked arrays were propagated through the network.
-	# We will "run" the network without paying attention to the masks.
-	# Instead, we now manually generate a mask for the ouputs, so that the errorfunction can disregard the masked realizations.
-	# Indeed all this masking stays the same for given training data, no need to compute this at every iteration...
+	This way, we can "run" the network without paying attention to the masks.
+	Instead, we generate a mask for the ouputs, so that the errorfunction can disregard the masked realizations.
+	All this masking stays the same for given training data, no need to compute this at every iteration...
 	
 	Naming conventions:
 	fulltraininputs = the full training set
 	valinputs = the full validation set
 	traininputs = the current "mini batch" subset of the full training set (or the full training set, if no minibatch is set)
-		
+	
+	
+	The fulltrain... and val... stuff is set directly by the constructor.
+	The train... stuff is set when a minibatch is created.
+	
 	"""
 
 
 
-	def __init__(self, inputs, targets, valfrac=0.5, shuffle=True):
+	def __init__(self, inputs, targets, auxinputs=None, valfrac=0.5, shuffle=True):
 		"""
 		
-		:param inputs: masked 3D array with the inputs, I'll take care of demasking it.
+		:param inputs: masked 3D array with the inputs for the neural network, I'll take care of demasking it.
 		:param targets: 2D array with the targets (should not be masked, as targets should all be known...)
+		
+		:param auxinputs: masked 3D array with auxiliary inputs, that is inputs that will be used by the error function,
+			but not serve as inputs for the neural nets.
+			As the auxinputs are not fed into a Net, we just keep a potential mask as it is.
 		
 		:param valfrac: Fraction of training data which should be used for the validation
 	
@@ -228,17 +237,27 @@ class Traindata:
 		
 		if inputs.ndim != 3 and targets.ndim != 2:
 			raise ValueError("Sorry, for training I only accept 3D input and 2D targets.")
+		if inputs.shape[2] != targets.shape[1] : # Checking for same number of cases
+			raise ValueError("Shape of inputs {} not compatible with targets {}".format(inputs.shape, targets.shape))
 		if type(targets) != np.ndarray:
 			raise ValueError("Sorry, targets should not be masked")
 	
 		# We split the mask apart:
 		(nomaskinputs, outputsmask) = demask(inputs, no=targets.shape[0])
 		
+		# Checking the auxinputs
+		if auxinputs != None:
+			if auxinputs.ndim != 3:
+				raise ValueError("Please give me 3D auxinputs")
+			if auxinputs.shape[2] != inputs.shape[2] or auxinputs.shape[0] != inputs.shape[0]: # Checking for same number of cases and realizations
+				raise ValueError("Shape of auxinputs {} not compatible with inputs {}".format(auxinputs.shape, inputs.shape))
+		
+		
 
 		# Now we cut away part of the data for validation purposes, and shuffle before doing so.
 		
 		ncases = inputs.shape[2]
-		nvalcases = int(valfrac * ncases)
+		nvalcases = int(valfrac * ncases) # number of validation cases
 		if nvalcases <= 0:
 			raise RuntimeError("Please allow for some validation cases.")
 		ntraincases = ncases - nvalcases
@@ -249,6 +268,7 @@ class Traindata:
 			np.random.shuffle(caseindexes)
 			trainindexes = caseindexes[0:ntraincases]
 			valindexes = caseindexes[ntraincases:ncases]
+			assert len(trainindexes) + len(valindexes) == ncases
 			
 			self.fulltraininputs = nomaskinputs[:,:,trainindexes]
 			self.valinputs = nomaskinputs[:,:,valindexes]
@@ -261,6 +281,14 @@ class Traindata:
 			else:
 				self.fulltrainoutputsmask = outputsmask[:,:,trainindexes]
 				self.valoutputsmask = outputsmask[:,:,valindexes]
+			
+			if auxinputs is None:
+				self.fulltrainauxinputs = None
+				self.valauxinputs = None
+			else:
+				self.fulltrainauxinputs = auxinputs[:,:,trainindexes]
+				self.valauxinputs = auxinputs[:,:,valindexes]
+			
 				
 			
 		else: # then we just slice the arrays:
@@ -278,6 +306,15 @@ class Traindata:
 				self.fulltrainoutputsmask = outputsmask[:,:,0:ntraincases]
 				self.valoutputsmask = outputsmask[:,:,ntraincases:ncases]
 			
+			if auxinputs is None:
+				self.fulltrainauxinputs = None
+				self.valauxinputs = None
+			else:
+				self.fulltrainauxinputs = auxinputs[:,:,0:ntraincases]
+				self.valauxinputs = auxinputs[:,:,ntraincases:ncases]
+
+			
+			
 		# Let's check that all this looks good:
 		assert self.fulltraininputs.shape[2] == ntraincases
 		assert self.valinputs.shape[2] == nvalcases			
@@ -285,7 +322,11 @@ class Traindata:
 		assert self.valtargets.shape[1] == nvalcases			
 		if outputsmask is not None:
 			assert self.fulltrainoutputsmask.shape[2] == ntraincases
-			assert self.valoutputsmask.shape[2] == nvalcases			
+			assert self.valoutputsmask.shape[2] == nvalcases
+		if auxinputs is not None:
+			assert self.fulltrainauxinputs.shape[2] == ntraincases
+			assert self.valauxinputs.shape[2] == nvalcases
+					
 
 		# By default we set the full training set as batch:
 		self.fullbatch()
@@ -346,28 +387,36 @@ class Traindata:
 		logger.info("Setting the full training set to be used as batch.")
 		self.traininputs = self.fulltraininputs
 		self.trainoutputsmask = self.fulltrainoutputsmask # even if None, this works
-		self.traintargets = self.fulltraintargets	
+		self.traintargets = self.fulltraintargets
+		self.trainauxinputs = self.fulltrainauxinputs
 
 
-	def random_minibatch(self, mbsize=10):
+	def random_minibatch(self, mbsize=None, mbfrac=0.1):
 		"""
 		Selects a random minibatch of the full training set
-		:param mbsize: if None, will call fullbatch.
+		:param mbsize: if given, I will select a minibatch of this size.
+		:param mbfrac: same parameter, but expressed as fraction of the size of the fulltrain sample. Note that mbsize overwrites this, if given.
 		"""
 		
-		if mbsize is None:
-			self.fullbatch()
-			return
+		if mbsize is None and mbfrac is None:
+			raise RuntimeError("Please give a mbsize or mbfrac!")
 		
 		nfulltrain = self.getnfulltrain()
-		if mbsize > nfulltrain:
-			raise RuntimeError("Cannot select {mbsize} among {nfulltrain}".format(mbsize=mbsize, nfulltrain=nfulltrain))
+		
+		if mbfrac != None:
+			finalmbsize = int(mbfrac * nfulltrain)
+		if mbsize != None: # If given, we overwrite the mbfrac computation!
+			finalmbsize = mbsize
 		
 		
-		logger.info("Randomly seleting new minibatch of {mbsize} among {nfulltrain} cases...".format(mbsize=mbsize, nfulltrain=nfulltrain))
+		if finalmbsize > nfulltrain:
+			raise RuntimeError("Cannot select {finalmbsize} among {nfulltrain}".format(finalmbsize=finalmbsize, nfulltrain=nfulltrain))
+		
+		
+		logger.info("Randomly selecting new minibatch of {finalmbsize} (mbfrac={mbfrac}) among {nfulltrain} cases...".format(finalmbsize=finalmbsize, mbfrac=mbfrac, nfulltrain=nfulltrain))
 		caseindexes = np.arange(nfulltrain)
 		np.random.shuffle(caseindexes)
-		caseindexes = caseindexes[0:mbsize]
+		caseindexes = caseindexes[0:finalmbsize]
 			
 		self.traininputs = self.fulltraininputs[:,:,caseindexes]
 		self.traintargets = self.fulltraintargets[:,caseindexes]
@@ -377,7 +426,11 @@ class Traindata:
 		else:
 			self.trainoutputsmask = None
 		
-
+		if self.fulltrainauxinputs is not None:
+			self.trainauxinputs = self.fulltrainauxinputs[:,:,caseindexes] # Also 3D
+		else:
+			self.trainauxinputs = None
+	
 	
 
 

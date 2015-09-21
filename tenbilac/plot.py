@@ -11,27 +11,27 @@ import matplotlib.patches
 import matplotlib.lines
 
 from . import err
+from . import net
+from . import wnet
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 
-	
-	
-def paramscurve(train, filepath=None, showtimes=True):
+def errevo(ax, train, showtimes=True):
 	"""
-	Visualization of the evolution of the network parameters and error during the training,
-	iteration per iteration
+	Plots the evolution of the error curve during the training, iteration per iteration.
 	
+	:param ax: matplotlib axes
 	:param showtimes: If True, some training times are written on the curve, in minutes.
 	"""
-	
-	# Getting the data 
-	optitparams = np.array(train.optitparams)
+
+	logger.info("Preparing error evolution plot for {train}".format(train=str(train)))
+	# Preparint the data:
 	optiterrs_train = np.array(train.optiterrs_train)
 	optiterrs_val = np.array(train.optiterrs_val)
-	optits = np.arange(len(train.optitparams)) + 1
+	optits = np.arange(len(train.optitparams))
 	optbatchchangeits = getattr(train, "optbatchchangeits", [])
 	
 	# The cpu durations
@@ -44,18 +44,7 @@ def paramscurve(train, filepath=None, showtimes=True):
 		timeindices = range(labelstep, optittimes.size, labelstep)
 	else:
 		timeindices = []
-	
-	
-	paramlabels = train.net.get_paramlabels()
-	# Now we find out how many layers we have, to be able to properly attribute colors
-	#layernames = [re.match("layer-(.*)_(.*)", label).group(1) for label in paramlabels]
-	#difflayernames = list(set(layernames))
-	#colors = itertools.cycle(["r", "black", "b", "g"])	
-	
-	
-	fig = plt.figure(figsize=(10, 10))
-	ax = plt.subplot(2, 1, 1)
-	
+
 	for optbatchchangeit in optbatchchangeits:
 		ax.axvline(optbatchchangeit, color="gray")
 
@@ -68,14 +57,42 @@ def paramscurve(train, filepath=None, showtimes=True):
 	
 	ax.set_yscale('log')
 	ax.set_xlabel("Iteration")
+	ax.set_xlim((optits[0], optits[-1]))
 	ax.set_ylabel("Cost function value ({0})".format(train.errfctname))
 	ax.legend()
 	ax.set_title(train.title())
+
+
+
+
+
+def paramsevo(ax, train, wnetpart=None):
+	"""
+	Plots the evolution of the actual network parameters.
 	
-	ax = plt.subplot(2, 1, 2)
+	""" 
 	
-	assert optitparams.shape[1] == train.net.nparams()
-	for paramindex in range(train.net.nparams()):
+	optits = np.arange(len(train.optitparams))
+	
+	if isinstance(train.net, wnet.WNet):
+		if wnetpart == "o":
+			mynet = train.net.neto
+			optitparams = np.array(train.optitparams)[:,:train.net.neto.nparams()]
+			
+		elif wnetpart == "w":
+			mynet = train.net.netw
+			optitparams = np.array(train.optitparams)[:,train.net.neto.nparams():]
+		else:
+			raise ValueError("This is a WNet, please specify a wnetpart")
+	else: # We have a normal Net:
+		mynet = train.net
+		optitparams = np.array(train.optitparams)
+	
+	paramlabels = mynet.get_paramlabels()
+	
+
+	assert optitparams.shape[1] == mynet.nparams()
+	for paramindex in range(mynet.nparams()):
 		label = paramlabels[paramindex]
 		if label.endswith("_bias"):
 			ls = "--"
@@ -88,7 +105,9 @@ def paramscurve(train, filepath=None, showtimes=True):
 			color="blue"
 		
 		pla = ax.plot(optits, optitparams[:,paramindex], ls=ls, color=color)
+	
 	ax.set_xlabel("Iteration")
+	ax.set_xlim((optits[0], optits[-1]))
 	ax.set_ylabel("Network parameter value")
 	
 	# Now creating the legend
@@ -99,6 +118,25 @@ def paramscurve(train, filepath=None, showtimes=True):
 	dashed = matplotlib.lines.Line2D([], [], color='black', marker='', ls="--", label='Bias')
 	
 	ax.legend(handles=[line, dashed, black_patch, red_patch])
+
+
+
+	
+def sumevo(train, filepath=None, showtimes=True):
+	"""
+	Visualization of the evolution of the network parameters and error during the training,
+	iteration per iteration
+	
+	:param showtimes: If True, some training times are written on the curve, in minutes.
+	"""
+	
+	
+	fig = plt.figure(figsize=(10, 10))
+	ax = plt.subplot(2, 1, 1)
+	errevo(ax, train, showtimes=showtimes)
+	
+	ax = plt.subplot(2, 1, 2)
+	paramsevo(ax, train, wnetpart=None)
 	
 	plt.tight_layout()
 	if filepath is None:
@@ -342,7 +380,7 @@ def errorinputs(train, filepath=None, io=0):
 #	Simply plots histograms of the different features
 #	Checks normalization
 #	
-#	:param data: 2D or 3D numpy array with (feature, gal) or (rea, feature, gal).
+#	:param data: 2D or 3D numpy array with (feature, case) or (rea, feature, case).
 #	:type data: numpy array
 #	
 #	"""

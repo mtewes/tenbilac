@@ -6,6 +6,7 @@ import numpy as np
 import scipy.optimize
 from datetime import datetime
 import os
+import copy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ from . import plot
 
 class Training:
 	"""
-	Holds together everthing related to the process of training a Tenbilac: the training data and the network.
+	Holds together everthing related to the process of training a Net (or a WNet): the training data and the network.
 	"""
 
 	
@@ -40,7 +41,12 @@ class Training:
 		
 		# Let's check compatibility between those two!
 		assert net.ni == self.dat.getni()
-		assert net.no == self.dat.getno()
+		if errfctname in ["mse", "msb", "msrb", "msre", "msbw"]:
+			assert net.no == self.dat.getno()
+		elif errfctname in ["msbwnet"]:
+			assert net.no == 2*self.dat.getno()
+		else:
+			logger.warning("Unknown error function, will blindly go ahead...")
 				
 		# Setting up the cost function
 		self.errfctname = errfctname
@@ -98,9 +104,31 @@ class Training:
 		Replaces the network object
 		"""
 		self.net = net
-		self.params = self.net.get_params_ref(schema=2) # Fast connection to the network parameters
+		self.params = self.net.get_params_ref() # Fast connection to the network parameters
+		self.paramslice = slice(None) # By default, all params are free to be optimized
 		
-	
+	def set_paramslice(self, mode=None):
+		"""
+		The paramslice allows to specify which params you want to be optimized.
+		This is relevant for instance when training a WNet.
+		We use a slice of this. Indexing with a boolean array ("mask") would seem nicer, but fancy indexing does not preserve
+		the references. Hence using a slice is a good compromise for speed.
+		"""
+		#self.paramslice[0:self.net.neto.nparams()] = False #= self.net.get_params_ref(mode=mode)
+		
+		if mode == "o": # the slice selects only the params of the "ouputs"
+			self.paramslice = slice(0, self.net.neto.nparams())
+		elif mode == "w": # Idem but for the weights
+			self.paramslice = slice(self.net.neto.nparams(), self.net.nparams())
+		elif mode == None: # Empty slice, use all params
+			self.paramslice = slice(None)
+		else:
+			raise ValueError("Unknown mode!")
+		
+		logger.info("Set paramslice to mode '{}' : {}/{} params are free to be optimized.".format(
+			mode, len(self.params[self.paramslice]), self.net.nparams())
+			)
+		
 
 	def __str__(self):
 		"""
@@ -197,7 +225,7 @@ class Training:
 			suffix = "_optit{0:05d}".format(self.optit)
 		
 		logger.info("Making and writing plots, with suffix '{}'...".format(suffix))
-		plot.paramscurve(self, os.path.join(dirpath, "paramscurve"+suffix+".png"))
+		plot.sumevo(self, os.path.join(dirpath, "sumevo"+suffix+".png"))
 		plot.outdistribs(self, os.path.join(dirpath, "outdistribs"+suffix+".png"))
 		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
 		logger.info("Done with plots")
@@ -237,10 +265,13 @@ class Training:
 		secondstaken = (now - self.iterationstarttime).total_seconds()
 		callstaken = self.optitcall 
 		
+		# Not sure if it is needed to update the params (of if the optimizer already did it), but it cannot harm and is fast:
+		self.params[self.paramslice] = args[0] # Updates the network parameters
+		
 		self.optittimes.append(secondstaken)
 		self.optiterrs_train.append(self.opterr)
 		self.optitcalls.append(self.optcall)
-		self.optitparams.append(args[0])
+		self.optitparams.append(copy.deepcopy(self.params)) # We add a copy of the current params
 		
 		# Now we evaluate the cost on the validation set:
 		valerr = self.valcost()
@@ -271,12 +302,15 @@ class Training:
 		This gets called repeatedly by the optimizers.
 		"""
 	
-		self.params[:] = p # Updates the network parameters
+		self.params[self.paramslice] = p # Updates the network parameters
+		
+		# Compute the outputs
 		outputs = self.net.run(self.dat.traininputs) # This is not a masked array!
-		if self.dat.trainoutputsmask is None:
-			err = self.errfct(outputs, self.dat.traintargets)
-		else:
-			err = self.errfct(np.ma.array(outputs, mask=self.dat.trainoutputsmask), self.dat.traintargets)
+		
+		# And now evaluate the error (cost) function.
+		if self.dat.trainoutputsmask is not None:
+			outputs = np.ma.array(outputs, mask=self.dat.trainoutputsmask)
+		err = self.errfct(outputs, self.dat.traintargets, auxinputs=self.dat.trainauxinputs)
 			
 		self.opterr = err
 		self.optcall += 1
@@ -291,7 +325,7 @@ class Training:
 
 
 	def currentcost(self):
-		return self.cost(p=self.params)
+		return self.cost(p=self.params[self.paramslice])
 
 	def testcost(self):
 		"""
@@ -317,20 +351,21 @@ class Training:
 		Evaluates the cost function on the validation set.
 		"""
 		outputs = self.net.run(self.dat.valinputs) # This is not a masked array!
-		if self.dat.valoutputsmask is None:
-			err = self.errfct(outputs, self.dat.valtargets)
-		else:
-			err = self.errfct(np.ma.array(outputs, mask=self.dat.valoutputsmask), self.dat.valtargets)
+		if self.dat.valoutputsmask is not None:
+			outputs = np.ma.array(outputs, mask=self.dat.valoutputsmask)
+		
+		err = self.errfct(outputs, self.dat.valtargets, auxinputs=self.dat.valauxinputs)
+		
 		return err
 		
 	
 	
-	def minibatch_bfgs(self, mbsize=100, mbloops=10, **kwargs):
+	def minibatch_bfgs(self, mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
 		
 		for loopi in range(mbloops):
 			if mbloops > 1:
 				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi+1, mbloops=mbloops))
-			self.dat.random_minibatch(mbsize=mbsize)
+			self.dat.random_minibatch(mbsize=mbsize, mbfrac=mbfrac)
 			self.optbatchchangeits.append(self.optit) # We record this minibatch change
 			self.bfgs(**kwargs)
 			
@@ -339,10 +374,10 @@ class Training:
 	def bfgs(self, maxiter=100, gtol=1e-8):
 		
 		self.start()
-		logger.info("Starting BFGS for {0} iterations (maximum)...".format(maxiter))
+		logger.info("Starting BFGS for {} iterations (maximum) with gtol={}...".format(maxiter, gtol))
 		
 		optres = scipy.optimize.fmin_bfgs(
-			self.cost, self.params,
+			self.cost, self.params[self.paramslice],
 			fprime=None,
 			maxiter=maxiter, gtol=gtol,
 			full_output=True, disp=True, retall=False, callback=self.callback)
