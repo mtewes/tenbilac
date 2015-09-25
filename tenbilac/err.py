@@ -155,7 +155,7 @@ def msbw(predictions, targets, auxinputs):
 	assert predictions.shape[1] == nt 
 	
 	predweights = 10**predictions
-	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+	biases = np.mean(auxinputs * predweights, axis=0) / np.mean(predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
 		
 	return np.mean(np.square(biases))
 	
