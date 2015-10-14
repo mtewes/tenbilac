@@ -399,7 +399,9 @@ class Traindata:
 		"""
 		
 		if mbsize is None and mbfrac is None:
-			raise RuntimeError("Please give a mbsize or mbfrac!")
+			self.fullbatch()
+			return
+			#raise RuntimeError("Please give a mbsize or mbfrac!")
 		
 		nfulltrain = self.getnfulltrain()
 		
