@@ -21,15 +21,17 @@ class Net():
 	Object representing a network made out of one or several hidden layers.
 	"""
 	
-	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", name=None, inames=None, onames=None):
+	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", oactfctname="iden", name=None, inames=None, onames=None):
 		"""
 		:param ni: Number of input features
 		:param nhs: Numbers of neurons in hidden layers
 		:type nhs: tuple
 		:param no: Number of ouput neurons
 		:param onlyid: Set this to true if you want identity activation functions on all layers
-			(useful for debugging).
+			(useful for debugging). Note that this overrides both actfctname and oactfctname!
 			
+		:param actfctname: name of activation function for hidden layers
+		:param oactfctname: idem for output layer
 			
 		:param name: if None, will be set automatically
 		:type name: string
@@ -63,12 +65,13 @@ class Net():
 		iniarch = np.array([self.ni]+self.nhs+[self.no]) # Note that we do not save this. Layers might evolve dynamically in future!
 
 		actfct = eval("act.{0}".format(actfctname)) # We turn the string actfct option into an actual function
+		oactfct = eval("act.{0}".format(oactfctname)) # idem
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
 		for (i, nh) in enumerate(self.nhs):
 				self.layers.append(layer.Layer(ni=iniarch[i], nn=nh, actfct=actfct, name="h"+str(i)))
 		# Adding the output layer:
-		self.layers.append(layer.Layer(ni=self.nhs[-1], nn=no, actfct=act.iden, name="o"))
+		self.layers.append(layer.Layer(ni=self.nhs[-1], nn=no, actfct=oactfct, name="o"))
 		
 		if onlyid: # Then all layers get the Id activation function:
 			for l in self.layers:
