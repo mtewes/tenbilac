@@ -31,6 +31,25 @@ def msb(predictions, targets, auxinputs=None):
 		raise ValueError("Wrong pred shape")
 
 
+def mab(predictions, targets, auxinputs=None):
+	"""
+	Mean absolute bias
+	
+	:param predictions: 3D array (realization, neuron, case), should be appropiratedly masked (thus not directly the output of the net)
+	:param targets: 2D array (neuron, case)
+	
+	"""
+	
+	if predictions.ndim == 3:
+	
+		biases = np.mean(predictions, axis=0) - targets # This is 2D, (label, case)
+		return np.mean(np.fabs(biases))
+	
+	else:
+		raise ValueError("Wrong pred shape")
+
+
+
 	
 def msrb(predictions, targets, auxinputs=None, rawterms=False):
 	"""
@@ -95,13 +114,15 @@ def msre(predictions, targets, auxinputs=None):
 	"""
 	MSE with normalization by the scatter along the realizations (as MSRB is for MSB)
 
+	Mean Square Error / Variance - 1
+
 	"""
 
 	if predictions.ndim == 3:
 		
 		stds = np.std(predictions, axis=0) # 2D, (label, case)
 
-		return np.mean(np.square((predictions - targets) / stds))
+		return np.mean(np.square((predictions - targets) / stds) - 1.0) # The minus one helps to viz it on a log scale...
 	
 	else:
 		raise ValueError("Wrong pred shape")
@@ -162,6 +183,26 @@ def msbw(predictions, targets, auxinputs):
 	
 
 
-
+def msbwnopow(predictions, targets, auxinputs):
+	"""
+	Similar as msbw, but we do not use this dangerous power of 10, and we do not normalize the weights at training
+	
+	This is for networks whose ouput is from a sigmoid layer, so positive by construction (and between 0 and 1).
+	Weights are 2 * output.
+	We do NOT normalize the weighted average auxinputs
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	biases = np.mean(auxinputs * 2.0*predictions, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
+	
 
 
