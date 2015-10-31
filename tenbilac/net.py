@@ -194,7 +194,7 @@ class Net():
 		Adds random noise to all parameters.
 		"""
 		
-		logger.info("Adding noise to network parameters...")
+		logger.info("Adding noise to network parameters ({})...".format(str(kwargs)))
 		
 		for l in self.layers:
 			l.addnoise(**kwargs)
