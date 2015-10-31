@@ -160,6 +160,24 @@ def msbwnet(predictions, targets, auxinputs=None):
 	
 
 
+def msbpw(predictions, targets, auxinputs):
+	"""
+	with pre-weights
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	biases = np.mean(auxinputs * predictions, axis=0) / np.mean(auxinputs, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+	
+	return np.mean(np.square(biases))
+
+
 def msbw(predictions, targets, auxinputs):
 	"""
 	This errorfct is for Nets predicting weights only. It expresses the mean square weighted bias of the auxinputs
@@ -167,6 +185,7 @@ def msbw(predictions, targets, auxinputs):
 	The predictions should be masked, auxinputs as well. Targets are usually not masked.
 	"""
 	
+	#logger.warning("Normalizes the weight, probably a bad idea !")
 	assert predictions.ndim == 3
 	assert auxinputs.ndim == 3
 	assert targets.ndim == 2
@@ -181,9 +200,108 @@ def msbw(predictions, targets, auxinputs):
 	return np.mean(np.square(biases))
 	
 	
+def msbwnonorm(predictions, targets, auxinputs):
+	"""
+	That normalization was a very bad idea...
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	predweights = 10**predictions
+	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
+	
+	
+def msbwclip(predictions, targets, auxinputs):
+	"""
+	Direct, but limiting the weights to be positive.
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	predweights = np.clip(predictions, 1e-6, 1e15) # need large uppper limit, otherwise optimizer stops
+	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
 
 
-def msbwnopow(predictions, targets, auxinputs):
+def msbwsquare(predictions, targets, auxinputs):
+	"""
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	predweights = predictions**2
+	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
+
+
+def msbwinvsquare(predictions, targets, auxinputs):
+	"""
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	predweights = 1.0/predictions**2
+	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
+
+
+
+
+
+
+
+def msbwsig(predictions, targets, auxinputs):
+	"""
+	Similar as msbw, but we do not use this dangerous power of 10, and we do not normalize the weights at training
+	
+	This is for networks whose ouput is from a sigmoid layer, so positive by construction (and between 0 and 1).
+	Weights are 1 * output.
+	We do NOT normalize the weighted average auxinputs
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	biases = np.mean(auxinputs * 1.0*predictions, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
+	
+
+def msbwsigtwo(predictions, targets, auxinputs):
 	"""
 	Similar as msbw, but we do not use this dangerous power of 10, and we do not normalize the weights at training
 	
@@ -204,5 +322,44 @@ def msbwnopow(predictions, targets, auxinputs):
 		
 	return np.mean(np.square(biases))
 	
+def msbwsigten(predictions, targets, auxinputs):
+	"""
+	Similar as msbw, but we do not use this dangerous power of 10, and we do not normalize the weights at training
+	
+	This is for networks whose ouput is from a sigmoid layer, so positive by construction (and between 0 and 1).
+	Weights are 10 * output.
+	We do NOT normalize the weighted average auxinputs
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	biases = np.mean(auxinputs * 10.0*predictions, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
 
-
+def msbwsigthree(predictions, targets, auxinputs):
+	"""
+	Similar as msbw, but we do not use this dangerous power of 10, and we do not normalize the weights at training
+	
+	This is for networks whose ouput is from a sigmoid layer, so positive by construction (and between 0 and 1).
+	Weights are 3 * output.
+	We do NOT normalize the weighted average auxinputs
+	"""
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	biases = np.mean(auxinputs * 3.0*predictions, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+		
+	return np.mean(np.square(biases))
