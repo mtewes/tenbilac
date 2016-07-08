@@ -42,8 +42,10 @@ outputs = wnet.run(inputs)
 
 targets = np.ones(no * ncas).reshape((no, ncas))
 
+# There is no by default weights, so let's initialise the weights to ones:
+weights = np.ones_like(outputs)
 
-print tenbilac.err.msbw(outputs, targets)
+print tenbilac.err.msbw(outputs, targets, auxinputs=weights)
 
 """
 print "ouputs shape ", outputs.shape

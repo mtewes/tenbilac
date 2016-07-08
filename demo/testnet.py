@@ -53,8 +53,14 @@ print "ouputs shape ", outputs.shape
 
 targets = np.ones(no * ngal).reshape((no, ngal))
 
+# Prepare a traindata object 
+dat = tenbilac.data.Traindata(inputs=inputs, targets=targets)
 
-net.train(inputs, targets, tenbilac.err.msb, maxiter=3)
+# Generate the network
+training = tenbilac.train.Training(net, dat, errfctname="msb")
+
+# We train this normal (non-inverse) regression with params as inputs, and observations as output:
+training.minibatch_bfgs(maxiter=3)
 
 
 

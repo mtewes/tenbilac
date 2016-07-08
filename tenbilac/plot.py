@@ -165,7 +165,7 @@ def outdistribs(train, filepath=None):
 
 	trainerrors = trainoutputs - dat.traintargets # 3D - 2D = 3D
 	valerrors = valoutputs - dat.valtargets
-	
+
 	trainbiases = np.mean(trainerrors, axis=0) # 2D (node, case)
 	valbiases = np.mean(valerrors, axis=0)
 	
@@ -174,7 +174,6 @@ def outdistribs(train, filepath=None):
 	
 	valmsrbterms = err.msrb(valoutputs, dat.valtargets, rawterms=True) # 2D
 	trainmsrbterms = err.msrb(trainoutputs, dat.traintargets, rawterms=True)
-	
 	
 	for io in range(train.net.no):
 		

@@ -1,5 +1,3 @@
-
-import numpy as np
 import tenbilac
 
 
@@ -8,7 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 
-net = tenbilac.net.Tenbilac(ni=2, nhs=[3, 3], onlyid=True)
+net = tenbilac.net.Net(ni=2, nhs=[3, 3], onlyid=True)
 net.setidentity()
 
 params = net.get_params_ref()

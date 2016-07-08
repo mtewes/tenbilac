@@ -227,7 +227,7 @@ class Net():
 		This works for 1D, 2D, and 3D inputs, see layer.run().
 		Note that this forward-running does not care about the fact that some of the inputs might be masked!
 		In fact it **ignores** the mask and will simply compute unmasked outputs.
-		Use predict() if you have masked inputs and want to "propagate" the mask appropriatedly.
+		Use predict() if you have masked inputs and want to "propagate" the mask appropriately.
 		"""
 		
 		# Normally we should go ahead and see if it fails, but in this particular case it's more helpful to test ahead:
