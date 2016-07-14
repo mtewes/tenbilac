@@ -93,13 +93,27 @@ class CommTraining():
 	This is an implicit decorator of the training class to handle the training of committees
 	"""
 	
-	def __init__(self, committee, **kwargs):
-		
+	def __init__(self, committee, multiple_trainings=False, **kwargs):
+
+		if multiple_trainings:
+			# If multiple_trainings then it means that all args are a list of len = 3:
+			lenkw = None
+			for kw in kwargs:
+				if len(committee.members) != len(kwargs[kw]): 
+					raise ValueError("All kwargs must be of the same size as the committee!")
+
 		self.committee = committee
 		rslt = []
 		for ii, memi in enumerate(self.committee.members):
+			
+			if multiple_trainings:
+				ukwargs = {}
+				for kw in kwargs:
+					ukwargs[kw] = kwargs[kw][ii]
+			else:
+				ukwargs = kwargs
 			logger.info("Setting up Training committee {i}/{f}".format(i=(ii+1), f=len(self.committee.members)))
-			output = train.Training(memi, **kwargs)
+			output = train.Training(memi, **ukwargs)
 			rslt.append(output)
 			
 		self.trainings = rslt
