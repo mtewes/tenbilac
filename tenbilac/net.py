@@ -1,18 +1,15 @@
 """
 This is Tenbilac!
-Net represent a "simple" network. See WNet if you're looking for weight predictions.
+Net represent a "simple" network. See WNet if you're looking for weight(ed) predictions.
 """
 
 import numpy as np
-import scipy.optimize
-from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
 
 from . import layer
 from . import utils
-from . import err
 from . import act
 from . import data
 
@@ -279,3 +276,4 @@ class Net():
 		
 		return outputs
 		
+

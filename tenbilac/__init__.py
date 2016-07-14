@@ -13,4 +13,4 @@ from . import act
 from . import data
 from . import train
 from . import plot
-
+from . import committee
