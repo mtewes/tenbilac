@@ -11,6 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from . import train
+from . import utils
 
 
 def spawn(f):  
@@ -153,7 +154,28 @@ class CommTraining():
 			outputs.append(out)
 			
 		return outputs 
+	
+	def save(self, filepath, keepdata=False):
+		"""
+		Saves the training committee into a pkl file
+		As the training data is so massive, by default we do not save it!
+		Note that this might be done at each iteration!
+		
+		..note:: This is a similar method as in `train.py`
+		"""
+
+		if keepdata is True:
+			logger.info("Writing training committee to disk and keeping the data...")
+			utils.writepickle(self, filepath)	
+		else:
+			tmptraindata = [dat for dat in self.trainings]
+			self.call('set_dat', dat=None)
+				
+			utils.writepickle(self, filepath)	
 			
+			for ii in range(len(self.trainings)):
+				self.trainings[ii].dat = tmptraindata[ii]
+
 def _worker(params):
 	training, method, attr, kwargs = params
 
