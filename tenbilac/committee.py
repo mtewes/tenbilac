@@ -1,7 +1,8 @@
 """
 This is Tenbilac!
 This file provides a class holder to define a ensemble (a committee) of Nets and a decorator class
-that allows to train the committee on the same or different data.
+that allows to train the committee on the same or different data. Committees are a stand-alone plugin.
+Tenbilac Networks are not aware of this extension.
 """
 
 import numpy as np
