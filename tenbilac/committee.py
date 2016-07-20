@@ -101,7 +101,8 @@ class CommTraining():
 			lenkw = None
 			for kw in kwargs:
 				if len(committee.members) != len(kwargs[kw]): 
-					raise ValueError("All kwargs must be of the same size as the committee!")
+					raise ValueError("All kwargs must be of the same size as the committee! {name}: {lenk}/{lenc}".format(name=kw,\
+						 lenk=len(kwargs[kw]), lenc=len(committee.members)))
 
 		self.committee = committee
 		rslt = []
