@@ -1,6 +1,7 @@
 """
 This is Tenbilac!
-This is a net (Wnet in the future) ensemble class.
+This file provides a class holder to define a ensemble (a committee) of Nets and a decorator class
+that allows to train the committee on the same or different data.
 """
 
 import numpy as np
@@ -14,7 +15,10 @@ from . import train
 from . import utils
 
 
-def spawn(f):  
+def spawn(f): 
+	"""
+	Helper function for `parmap` which prepares the worker `f` to be spawned.
+	""" 
 	def fun(pipe,x):  
 		pipe.send(f(x))  
 		pipe.close()  
@@ -23,6 +27,8 @@ def spawn(f):
 def parmap(f, X, ncpu):  
 	"""
 	This is an alternative to multiprocessing.Pool to avoid the limitations of the package (pickling stuff...)
+	
+	.. note:: see http://stackoverflow.com/questions/3288595/multiprocessing-how-to-use-pool-map-on-a-function-defined-in-a-class
 	
 	.. note:: It is very possible that multiprocessing.Pool is fixed in python3 
 	"""
@@ -97,7 +103,7 @@ class CommTraining():
 	def __init__(self, committee, multiple_trainings=False, **kwargs):
 
 		if multiple_trainings:
-			# If multiple_trainings then it means that all args are a list of len = 3:
+			# If multiple_trainings then it means that all args are a list of same len:
 			lenkw = None
 			for kw in kwargs:
 				if len(committee.members) != len(kwargs[kw]): 
