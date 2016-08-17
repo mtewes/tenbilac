@@ -252,7 +252,7 @@ class Net():
 		
 		:param inputs: a (potentially masked) 3D array
 		
-		:returns: a 3D array, appropriatedly masked
+		:returns: a 3D array, appropriately masked
 		
 		"""
 		

@@ -93,7 +93,7 @@ class Committee():
 		All other kwargs are passed to the method
 		"""
 		
-		return np.asarray([eval("memi.%s(**kwargs)" % (method)) for memi in self.members])
+		return np.ma.asarray([eval("memi.%s(**kwargs)" % (method)) for memi in self.members])
 
 
 class CommTraining():
@@ -161,6 +161,8 @@ class CommTraining():
 			self.committee.members[ii] = rs.net
 			outputs.append(out)
 			
+		outputs = np.ma.asarray(out)
+
 		return outputs 
 	
 	def save(self, filepath, keepdata=False):
