@@ -16,12 +16,14 @@ from . import act
 
 		
 class Layer():	
-	def __init__(self, ni, nn, actfct=act.tanh, name="None"):
+	def __init__(self, ni, nn, actfct=act.tanh, name="None", mode="sum"):
 		
 		"""
 		:param ni: Number of inputs
 		:param nn: Number of neurons
 		:param actfct: Activation function
+		:param mode: "sum" or "mult". If sum, the neurons perform the usual linear combinations.
+			If mult, they work as "Product Units" (Durbin Rumelhart 1989).
 		"""
 
 		self.ni = ni
@@ -29,6 +31,10 @@ class Layer():
 		self.actfct = actfct
 		self.name = name
 		
+		self.mode = mode
+		if not self.mode in ("sum", "mult"):
+			raise RuntimeError("Unknown layer mode")
+
 		self.weights = np.zeros((self.nn, self.ni)) # first index is neuron, second is input
 		self.biases = np.zeros(self.nn) # each neuron has its bias
 		
@@ -44,7 +50,7 @@ class Layer():
 		"""
 		Sets all weights and biases to zero
 		"""
-		logger.info("Setting layer '{self.name}' parameters to zero...".format(self=self))
+		logger.info("Setting {self.mode}-layer '{self.name}' parameters to zero...".format(self=self))
 		self.weights *= 0.0
 		self.biases *= 0.0
 	
@@ -55,7 +61,7 @@ class Layer():
 		"""
 		
 		txt = []
-		txt.append("Layer '{name}':".format(name=self.name))
+		txt.append("Layer '{name}', mode {mode}:".format(name=self.name, mode=self.mode))
 		for inn in range(self.nn):
 			txt.append("    output {inn} = {act} ( input * {weights} + {bias} )".format(
 				inn=inn, act=self.actfct.__name__, weights=self.weights[inn,:], bias=self.biases[inn]))
@@ -88,30 +94,47 @@ class Layer():
 			output indices: (realization, neuron, case)
 			
 		"""
+		if self.mode == "sum":
+			if inputs.ndim == 1:
+				return self.actfct(np.dot(self.weights, inputs) + self.biases)
 		
-		if inputs.ndim == 1:
-			return self.actfct(np.dot(self.weights, inputs) + self.biases)
+			elif inputs.ndim == 2:
+				assert inputs.shape[0] == self.ni		
+				return self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1)))
 		
-		elif inputs.ndim == 2:
-			assert inputs.shape[0] == self.ni		
-			return self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1)))
-		
-		elif inputs.ndim == 3:
-			assert inputs.shape[1] == self.ni
+			elif inputs.ndim == 3:
+				assert inputs.shape[1] == self.ni
 			
-			# Doing this:
-			# self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1)))
-			# ... gives ouput indices (neuron, realization, case)
-			# We need to change the order of those indices:
+				# Doing this:
+				# self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1)))
+				# ... gives ouput indices (neuron, realization, case)
+				# We need to change the order of those indices:
+				
+				return np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
 			
-			return np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
-		
-			# Note that np.ma.dot does not work for 3D arrays!
-			# We do not care about masks at all here, just compute assuming nothing is masked.
-		
-		else:
-			raise RuntimeError("Input shape error")
+				# Note that np.ma.dot does not work for 3D arrays!
+				# We do not care about masks at all here, just compute assuming nothing is masked.
+			
+			else:
+				raise RuntimeError("Input shape error")
 
+		elif self.mode == "mult":
+			
+			if inputs.ndim == 1:
+				return self.actfct(np.prod(np.power(inputs, self.weights), axis=1) + self.biases) # Phew, that was easy, nice!
+		
+			elif inputs.ndim == 2:
+				assert inputs.shape[0] == self.ni		
+				
+				
+			elif inputs.ndim == 3:
+				assert inputs.shape[1] == self.ni
+			
+			
+			else:
+				raise RuntimeError("Input shape error")
+			
+			
 		
 		
 		
