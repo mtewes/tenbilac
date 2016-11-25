@@ -26,8 +26,8 @@ class Layer():
 			If mult, they work as "Product Units" (Durbin Rumelhart 1989).
 		"""
 
-		self.ni = ni
-		self.nn = nn
+		self.ni = abs(ni)
+		self.nn = abs(nn) # We keep those positive, even if negative might have indicated "mult" earlier in the code.
 		self.actfct = actfct
 		self.name = name
 		
@@ -39,7 +39,16 @@ class Layer():
 		self.biases = np.zeros(self.nn) # each neuron has its bias
 		
 	def __str__(self):
-		return "Layer '{self.name}', mode {self.mode}, ni {self.ni}, nn {self.nn}, actfct {self.actfct}".format(self=self)
+		return "Layer '{self.name}', mode {self.mode}, ni {self.ni}, nn {self.nn}, actfct {self.actfct.__name__}".format(self=self)
+	
+	def modecode(self):
+		"""
+		Just a little "*" to label unconventional layers in logs etc
+		"""
+		if self.mode == "sum":
+			return ""
+		else:
+			return "*"
 	
 	def addnoise(self, wscale=0.1, bscale=0.1):
 		"""
