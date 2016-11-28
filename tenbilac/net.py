@@ -208,7 +208,7 @@ class Net():
 		between the ith output and the ith input (for each i in the outputs).
 		
 		This should be a good starting position for "calibration" tasks. Example: first
-		input feature is observed galaxy ellipticity g11, and first output is true g1.
+		input feature is observed galaxy ellipticity e1, and first output is shear g1.
 		"""
 
 		for l in self.layers:
