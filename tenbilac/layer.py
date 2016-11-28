@@ -133,23 +133,46 @@ class Layer():
 			else:
 				raise RuntimeError("Input shape error")
 
+# The initial implementation of mult, works for positive inputs:
+#		elif self.mode == "mult":
+#			
+#			if inputs.ndim == 1:
+#				return self.actfct(np.prod(np.power(inputs, self.weights), axis=1) + self.biases) # Phew, that was easy, nice!
+#		
+#			elif inputs.ndim == 2:
+#				assert inputs.shape[0] == self.ni			
+#				return self.actfct(np.transpose(np.prod([np.power(inputs[:,i], self.weights) for i in range(inputs.shape[1])], axis=2) + self.biases))
+#				
+#			elif inputs.ndim == 3:
+#				assert inputs.shape[1] == self.ni
+#				return np.swapaxes(self.actfct(np.prod([[np.power(inputs[j,:,i], self.weights) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3) + self.biases), 1, 2)
+#				
+#			else:
+#				raise RuntimeError("Input shape error")
+			
+# new variants for negative and positive inputs
 		elif self.mode == "mult":
 			
-			if inputs.ndim == 1:
-				return self.actfct(np.prod(np.power(inputs, self.weights), axis=1) + self.biases) # Phew, that was easy, nice!
+			signlim = 0.5
+			
+			if inputs.ndim == 1:		
+				# The test used as exponent has to be False if we want to ignore the sign, True to use it
+				signs = np.prod(np.power(np.sign(inputs), np.fabs(self.weights) > signlim), axis=1)
+				return signs * self.actfct(np.prod(np.power(np.fabs(inputs), self.weights), axis=1) + self.biases) # Phew, that was easy, nice!
 		
 			elif inputs.ndim == 2:
-				assert inputs.shape[0] == self.ni			
-				return self.actfct(np.transpose(np.prod([np.power(inputs[:,i], self.weights) for i in range(inputs.shape[1])], axis=2) + self.biases))
+				assert inputs.shape[0] == self.ni
+				signs = np.transpose(np.prod([np.power(np.sign(inputs[:,i]), np.fabs(self.weights) > signlim) for i in range(inputs.shape[1])], axis=2))	
+				return signs * self.actfct(np.transpose(np.prod([np.power(np.fabs(inputs[:,i]), self.weights) for i in range(inputs.shape[1])], axis=2) + self.biases))
 				
 			elif inputs.ndim == 3:
 				assert inputs.shape[1] == self.ni
-				return np.swapaxes(self.actfct(np.prod([[np.power(inputs[j,:,i], self.weights) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3) + self.biases), 1, 2)
+				signs = np.swapaxes(np.prod([[np.power(np.sign(inputs[j,:,i]), np.fabs(self.weights) > signlim) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3), 1, 2)
+				return signs * np.swapaxes(self.actfct(np.prod([[np.power(np.fabs(inputs[j,:,i]), self.weights) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3) + self.biases), 1, 2)
 				
 			else:
 				raise RuntimeError("Input shape error")
-			
-			
+		
 		
 		
 		
