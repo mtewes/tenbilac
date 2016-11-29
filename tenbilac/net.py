@@ -202,7 +202,7 @@ class Net():
 			l.addnoise(**kwargs)
 			
 			
-	def setidentity(self):
+	def setidentity(self, **kwargs):
 		"""
 		Adjusts the network parameters so to approximatively get an identity relation
 		between the ith output and the ith input (for each i in the outputs).
@@ -212,15 +212,13 @@ class Net():
 		"""
 
 		for l in self.layers:
-			l.zero() # Sets everything to zero
 			if l.nn < self.no or self.ni < self.no:
 				raise RuntimeError("Network is too small for setting identity!")
 			
-		for io in range(self.no):
-			for l in self.layers:
-				l.weights[io, io] = 1.0 # Now we set selected weights to 1.0 (leaving biases at 0.0)
+		for l in self.layers:
+				l.setidentity(**kwargs)
 			
-		logger.info("Set identity weights")
+		logger.info("Done with setting weights to identity.")
 			
 
 	def run(self, inputs):

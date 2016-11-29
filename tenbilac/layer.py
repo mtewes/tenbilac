@@ -37,6 +37,7 @@ class Layer():
 
 		self.weights = np.zeros((self.nn, self.ni)) # first index is neuron, second is input
 		self.biases = np.zeros(self.nn) # each neuron has its bias
+			
 		
 	def __str__(self):
 		return "Layer '{self.name}', mode {self.mode}, ni {self.ni}, nn {self.nn}, actfct {self.actfct.__name__}".format(self=self)
@@ -57,13 +58,40 @@ class Layer():
 		self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
 		self.biases += bscale * np.random.randn(self.biases.size)
 	
-	def zero(self):
+	def setzero(self):
 		"""
 		Sets all weights and biases to zero
 		"""
 		logger.info("Setting {self.mode}-layer '{self.name}' parameters to zero...".format(self=self))
-		self.weights *= 0.0
-		self.biases *= 0.0
+		self.weights = np.zeros(self.weights.shape)
+		self.biases = np.zeros(self.biases.shape)
+		# This is cleaner than the preivous "*=0" as it also sets the sign to be positive. Not a big deal, but looks nicer.
+	
+
+	def setidentity(self, onlyn=None):
+		"""
+		Sets the weights and biases so that this layer transports all its first nn inputs to the nn outputs.
+		This is meant to give a promising initial condition for training a calibration-like task. 
+		
+		:param onlyn: If set, limits the number of neurons to be set. By default, all are set.
+		:type onlyn: int
+		"""
+		self.setzero()
+		
+		npossible = min(self.ni, self.nn) # Can't transport more inputs
+		if onlyn is None:
+			ngofor = npossible
+		else:
+			if onlyn > npossible:
+				logger.warning("Cannot setidentity for more neurons (onlyn={}) than possible ({})".format(onlyn, npossible))
+			ngofor = min(onlyn, npossible)
+		if ngofor < 0:
+			raise RuntimeError("Cannot set identity, something wrong with number of neurons.")
+		
+		for n in range(ngofor):
+			self.weights[n, n] = 1.0
+		logger.info("Setting identity for {}: it now transports {} inputs".format(str(self), ngofor))
+		
 	
 	
 	def report(self):

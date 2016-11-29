@@ -13,9 +13,9 @@ nrea = 2
 no = 4
 
 
-net = tenbilac.net.Net(ni=ni, nhs=[4, 6, 4], no=no, onlyid=True)
+net = tenbilac.net.Net(ni=ni, nhs=[4, -6, 4], no=no, onlyid=True)
 
-net.setidentity()
+net.setidentity(onlyn=2)
 
 print net.report()
 
