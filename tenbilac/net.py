@@ -68,8 +68,8 @@ class Net():
 		for (i, nh) in enumerate(self.nhs):
 			if nh > 0:
 				self.layers.append(layer.Layer(ni=iniarch[i], nn=nh, actfct=actfct, name="h"+str(i), mode="sum"))
-			elif nh < 0:
-				self.layers.append(layer.Layer(ni=iniarch[i], nn=nh, actfct=actfct, name="h"+str(i), mode="mult"))
+			elif nh < 0: # a "mult"-layer
+				self.layers.append(layer.Layer(ni=iniarch[i], nn=-nh, actfct=actfct, name="h"+str(i), mode="mult"))
 			else:
 				raise ValueError("Cannot have 0 hidden nodes")
 		# Adding the output layer:
