@@ -106,6 +106,7 @@ class Normer:
 		Returns the normalized data.
 		"""
 		
+		logger.info("Normalizing array of shape {} with normer-type '{}'".format(x.shape, self.type))
 		if x.ndim not in (2, 3):
 			raise ValueError("Cannot handle this array shape")
 
