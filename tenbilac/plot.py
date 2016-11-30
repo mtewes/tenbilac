@@ -375,7 +375,16 @@ def errorinputs(train, filepath=None, io=0):
 		logger.info("Writing errorinputs to {0}".format(filepath))
 		plt.savefig(filepath)
 
-def draw_bezier(ax, start, end, **kwargs):
+def draw_link(ax, start, end, **kwargs):
+	"""
+	Computes a Bezier curve between two points (`start` and `end`) on an axis `ax`
+	
+	:param ax: the axis to draw on
+	:param start: The starting point, must be an array [Sx, Sy]
+	:param end: The end point of the curve, must be an array [Ex, Ey]
+	
+	Any additional kawrgs are directly passed to `patches.PathPatch` to control the line style.
+	"""
 	
 	verts = [
 			(start[0], start[1]),  # P0
@@ -394,20 +403,51 @@ def draw_bezier(ax, start, end, **kwargs):
 	patch = patches.PathPatch(path, facecolor='None', **kwargs)
 	ax.add_patch(patch)
 	
-def scale_bias(b):
-	return 20*np.abs(b)
+def scale_bias(b, scale=20.):
+	"""
+	Returns the scaled biased for the `plot.netviz` plot.
 	
-def scale_weight(w):
-	return 2*np.abs(w)
+	:param b: the bias to scale
+	:param scale: the scale parameter to be applied on the absolute value of `b`. Default=20
+	"""
+	return scale * np.abs(b)
+	
+def scale_weight(w, scale=2.):
+	"""
+	Returns the scaled weight for the `plot.netviz` plot.
+	
+	:param w: the weight to scale
+	:param scale: the scale parameter to be applied on the absolute value of `w`. Default=2
+	"""
+	return scale * np.abs(w)
 
-def get_color(v):
+def get_color(v, pos="orange", neg="navy"):
+	"""
+	Returns a color code for the scalar value `v`.
+	
+	:param v: scalar value
+	:param pos: name or color-code for the positive values
+	:param neg: name or color-code for the negative values
+	"""
 	if v > 0:
-		c = 'orange'
+		c = pos
 	else:
-		c = 'navy'
+		c = neg
 	return c
 
 def netviz(train, inames=None, onames=None, title="default", legend=True, filepath=None):
+	"""
+	Draws a visualisation of the network in the style of the `Tensorflow` playground.
+	
+	:param train: the Train class for the network
+	:param inames: the names of the input features. If `None` simply write "Feature 0", ...
+		:type inames: list of the same length as the input features
+	:param onames: the names of the input features. If `None` simply write "Output 0", ...
+		:type onames: list of the same length as the input features
+	:param title: The string to display as title, if "default" writes activation fct + err fct. Default=`default`
+	:param legend: Whether to show the legend for the tickness of the lines and points. Default=`True`
+	:param filepath: The file path to save the data to. If `None` (default) shows the figures.
+	"""
 	
 	errfct = train.errfct.__name__
 	net = train.net
@@ -442,12 +482,11 @@ def netviz(train, inames=None, onames=None, title="default", legend=True, filepa
 		else:
 			flnis = np.arange(net.layers[ii+1].ni)
 			dyf = (nmax - (net.layers[ii+1].ni * 1.)) * 0.5
+		
 		for iw, w in enumerate(l.weights):
 			# Draw the weights
 			for il, link in enumerate(w):
-				#plt.plot([ii, ii+1], [lnis[il], flnis[iw]], lw=np.abs(link)*2, color=c, zorder=-1)
-				
-				draw_bezier(ax, start=[ii, lnis[il]], 
+				draw_link(ax, start=[ii, lnis[il]], 
 						end=[ii+1, flnis[iw]+dyf], lw=scale_weight(link), edgecolor=get_color(link), zorder=-1)
 			
 			# Draw the biases	
@@ -472,10 +511,11 @@ def netviz(train, inames=None, onames=None, title="default", legend=True, filepa
 			plt.scatter([ii+1], [yy], c=get_color(w), edgecolors="None", s=scale_bias(w))
 			plt.plot([ii+1.07, ii+1.47], [yy, yy], c=get_color(w), lw=scale_weight(w))
 	
+	# Taking care of a few things
 	plt.xlim([-0.23 * (len(net.nhs) + 2),ii+1.7])
-	plt.axis('off')
-
 	plt.tight_layout()
+	plt.axis('off')
+	
 	if filepath is None:
 		plt.show()	
 	else:
