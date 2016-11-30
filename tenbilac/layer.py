@@ -51,11 +51,16 @@ class Layer():
 		else:
 			return "*"
 	
-	def addnoise(self, wscale=0.1, bscale=0.1):
+	def addnoise(self, wscale=0.1, bscale=0.1, multwscale=0.1):
 		"""
 		Adds some noise to weights and biases
 		"""
-		self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+		if self.mode == "sum":
+			self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+		elif self.mode == "mult":
+			self.weights += multwscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+		else:
+			raise RuntimeError("Unknown mode")
 		self.biases += bscale * np.random.randn(self.biases.size)
 	
 	def setzero(self):
@@ -63,9 +68,10 @@ class Layer():
 		Sets all weights and biases to zero
 		"""
 		logger.info("Setting {self.mode}-layer '{self.name}' parameters to zero...".format(self=self))
-		self.weights = np.zeros(self.weights.shape)
-		self.biases = np.zeros(self.biases.shape)
-		# This is cleaner than the preivous "*=0" as it also sets the sign to be positive. Not a big deal, but looks nicer.
+		#self.weights = np.zeros(self.weights.shape) # No, this does not work! It kills the get_params reference used to set up the Training *before* noise is added.
+		#self.biases = np.zeros(self.biases.shape) # Leave this commented to prevent later attempts to change it.
+		self.weights *= 0.0
+		self.biases *= 0.0
 	
 
 	def setidentity(self, onlyn=None):
@@ -182,6 +188,7 @@ class Layer():
 		elif self.mode == "mult":
 			
 			signlim = 0.5
+			self.biases *= 0.0
 			
 			if inputs.ndim == 1:		
 				# The test used as exponent has to be False if we want to ignore the sign, True to use it
