@@ -9,6 +9,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches
 import matplotlib.lines
+from matplotlib.path import Path
+import matplotlib.patches as patches
 
 from . import err
 from . import net
@@ -373,6 +375,112 @@ def errorinputs(train, filepath=None, io=0):
 		logger.info("Writing errorinputs to {0}".format(filepath))
 		plt.savefig(filepath)
 
+def draw_bezier(ax, start, end, **kwargs):
+	
+	verts = [
+			(start[0], start[1]),  # P0
+			(start[0]+0.5, start[1]), # P1
+			(end[0]-0.5, end[1]), # P2
+			(end[0], end[1]), # P3
+    ]
+
+	codes = [Path.MOVETO,
+         Path.CURVE4,
+         Path.CURVE4,
+         Path.CURVE4,
+         ]
+	
+	path = Path(verts, codes)
+	patch = patches.PathPatch(path, facecolor='None', **kwargs)
+	ax.add_patch(patch)
+	
+def scale_bias(b):
+	return 20*np.abs(b)
+	
+def scale_weight(w):
+	return 2*np.abs(w)
+
+def get_color(v):
+	if v > 0:
+		c = 'orange'
+	else:
+		c = 'navy'
+	return c
+
+def netviz(train, inames=None, onames=None, title="default", legend=True, filepath=None):
+	
+	errfct = train.errfct.__name__
+	net = train.net
+	
+	nmax = np.amax([net.ni, net.no, np.amax(net.nhs)]) * 1.
+	
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	if title == "default":
+		title = "".join([r"$\mathrm{{{n}/{actfct}\ }}$".format(n=l.nn, actfct=l.actfct.__name__) for l in net.layers])
+		title += r"$; \mathrm{{{}}}$".format(errfct)
+	plt.title(title)
+	
+	plt_kwargs = {'marker':'s', 's':40, 'c':'k', 'zorder':1}
+
+	for ii, l in enumerate(net.layers):
+		dy = nmax / 2 - (l.ni * 1.) / 2
+		lnis = np.arange(l.ni) + dy
+		
+		plt.scatter(np.zeros_like(lnis) + ii, lnis, **plt_kwargs)
+		
+		if ii == 0 :
+			# Write the name of the features
+			if inames is None:
+				inames = [r"$\mathrm{{Feature\ {}}}$".format(i) for i in range(net.ni)]
+			for iii, inp in enumerate(inames):
+				plt.text(ii-0.08, iii+dy, inp, horizontalalignment='right', verticalalignment='center')
+		
+		if ii >= len(net.layers) - 1: 
+			flnis = np.arange(net.no)
+			dyf = (nmax - (net.no * 1.)) * 0.5
+		else:
+			flnis = np.arange(net.layers[ii+1].ni)
+			dyf = (nmax - (net.layers[ii+1].ni * 1.)) * 0.5
+		for iw, w in enumerate(l.weights):
+			# Draw the weights
+			for il, link in enumerate(w):
+				#plt.plot([ii, ii+1], [lnis[il], flnis[iw]], lw=np.abs(link)*2, color=c, zorder=-1)
+				
+				draw_bezier(ax, start=[ii, lnis[il]], 
+						end=[ii+1, flnis[iw]+dyf], lw=scale_weight(link), edgecolor=get_color(link), zorder=-1)
+			
+			# Draw the biases	
+			plt.scatter([ii+1.], [flnis[iw]+dyf+0.1], c=get_color(l.biases[iw]), edgecolors="None", s=scale_bias(l.biases[iw]))
+	
+	# Draw output
+	nos = np.arange(net.no)
+	plt.scatter(np.zeros_like(nos) + ii + 1, nos+dyf, **plt_kwargs)
+	
+	# Name the output
+	if onames is None:
+		onames = [r"$\mathrm{{Ouput\ {}}}$".format(i) for i in range(net.no)]
+	for iii, inp in enumerate(onames):
+		plt.annotate(inp, xy=(ii+1.08, iii+dyf), horizontalalignment='left', verticalalignment='center')
+		
+	# Draw legend
+	if legend:
+		ws = [-1.,-0.5,0.5,1.]
+		for iw, w in enumerate(ws):
+			yy = nos[-1]+dyf + 0.75 + iw * 0.2
+			plt.annotate(r"$%1.1f$" % w, xy=(ii+0.95, yy), horizontalalignment='right', verticalalignment='center')
+			plt.scatter([ii+1], [yy], c=get_color(w), edgecolors="None", s=scale_bias(w))
+			plt.plot([ii+1.07, ii+1.47], [yy, yy], c=get_color(w), lw=scale_weight(w))
+	
+	plt.xlim([-0.23 * (len(net.nhs) + 2),ii+1.7])
+	plt.axis('off')
+
+	plt.tight_layout()
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing netviz to {0}".format(filepath))
+		plt.savefig(filepath)
 	
 #def checkdata(data, filepath=None):
 #	"""
