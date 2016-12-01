@@ -20,7 +20,7 @@ layer = tenbilac.layer.Layer(ni=2, nn=3, actfct=tenbilac.act.iden, mode="mult")
 layer.weights[0, 0] = 1
 layer.weights[0, 1] = 1
 
-# Second neuron: product of almost-squres
+# Second neuron: product of almost-squares
 layer.weights[1, 0] = 2.1
 layer.weights[1, 1] = 2.1
 
