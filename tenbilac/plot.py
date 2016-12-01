@@ -146,7 +146,7 @@ def sumevo(train, filepath=None, showtimes=True):
 	else:
 		logger.info("Writing paramscurve to {0}".format(filepath))
 		plt.savefig(filepath)
-
+	plt.close() # Important, otherwise it's still around for the next plt.show()
 
 
 def outdistribs(train, filepath=None):
@@ -264,6 +264,7 @@ def outdistribs(train, filepath=None):
 	else:
 		logger.info("Writing outdistribs to {0}".format(filepath))
 		plt.savefig(filepath)
+	plt.close() # Important, otherwise it's still around for the next plt.show()
 
 	
 	
@@ -374,6 +375,7 @@ def errorinputs(train, filepath=None, io=0):
 	else:
 		logger.info("Writing errorinputs to {0}".format(filepath))
 		plt.savefig(filepath)
+	plt.close() # Important, otherwise it's still around for the next plt.show()
 
 def draw_link(ax, start, end, **kwargs):
 	"""
@@ -514,7 +516,9 @@ def netviz(train, title="default", legend=True, filepath=None):
 	else:
 		logger.info("Writing netviz to {0}".format(filepath))
 		plt.savefig(filepath)
-	
+	plt.close() # Important, otherwise it's still around for the next plt.show()
+
+
 #def checkdata(data, filepath=None):
 #	"""
 #	Simply plots histograms of the different features
