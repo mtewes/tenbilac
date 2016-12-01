@@ -65,8 +65,7 @@ class Training:
 				self.regullam = regulweight
 		else:
 			self.regullam = None
-				
-		
+			
 		# We initialize some counters for the optimization:
 		self.optit = 0 # The iteration counter
 		self.optcall = 0 # The cost function call counter
@@ -162,9 +161,10 @@ class Training:
 		Returns a string with a description of the cost function
 		"""
 		txterrfct = "{self.errfctname}".format(self=self)
-		if hasattr(self, 'self.regullam') and self.regullam is not None:
+		if hasattr(self, 'regullam') and self.regullam is not None:
 			txterrfct += "+{self.regulfctname}".format(self=self)
 		return txterrfct
+	
 	
 	def title(self):
 		"""
@@ -309,8 +309,8 @@ class Training:
 		
 		mscallcase = 1000.0 * float(secondstaken) / (float(callstaken) * self.dat.getntrain()) # Time per call and training case
 		
-		logger.info("Iter. {self.optit:4d}, {self.errfctname} train = {self.opterr:.6e}, val = {valerr:.6e} ({valerrratio:4.1f}), {time:.4f} s for {calls} calls ({mscallcase:.4f} ms/cc)".format(
-			self=self, time=secondstaken, valerr=valerr, valerrratio=valerrratio, calls=callstaken, mscallcase=mscallcase))
+		logger.info("Iter. {self.optit:4d}, {ef} train = {self.opterr:.6e}, val = {valerr:.6e} ({valerrratio:4.1f}), {time:.4f} s for {calls} calls ({mscallcase:.4f} ms/cc)".format(
+			self=self, ef=self.get_costfctname(), time=secondstaken, valerr=valerr, valerrratio=valerrratio, calls=callstaken, mscallcase=mscallcase))
 		
 		if self.itersavepath != None:
 			self.save(self.itersavepath)
