@@ -16,6 +16,7 @@ from . import utils
 from . import err
 from . import act
 from . import plot
+from . import regul
 
 
 
@@ -61,6 +62,8 @@ class Training:
 				self.regulfctname = regulfctname
 				self.regulfct = eval("regul.{0}".format(self.regulfctname))
 				self.regullam = regulweight
+		else:
+			self.regullam = None
 				
 		
 		# We initialize some counters for the optimization:
@@ -330,6 +333,11 @@ class Training:
 		if self.dat.trainoutputsmask is not None:
 			outputs = np.ma.array(outputs, mask=self.dat.trainoutputsmask)
 		err = self.errfct(outputs, self.dat.traintargets, auxinputs=self.dat.trainauxinputs)
+		
+		if self.regullam is not None:
+			# TODO: Is there a faster way to do this?
+			weights = np.concatenate(([(l.weights).flatten() for l in self.net.layers]))
+			err += self.regullam * self.regulfct(weights) 
 			
 		self.opterr = err
 		self.optcall += 1

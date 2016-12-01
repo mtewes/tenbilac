@@ -9,6 +9,7 @@ from . import net
 from . import wnet
 from . import layer
 from . import err
+from . import regul
 from . import act
 from . import data
 from . import train
