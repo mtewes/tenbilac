@@ -26,7 +26,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None, inames=None, onames=None):
+	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None):
 		"""
 
 		Sets up
@@ -89,8 +89,6 @@ class Training:
 		
 		self.autoplotdirpath = autoplotdirpath
 		self.autoplot = autoplot
-		self.inames = inames
-		self.onames = onames
 		
 		logger.info("Done with setup of {self}".format(self=self))
 		
@@ -238,7 +236,7 @@ class Training:
 
 
 
-	def makeplots(self, suffix="_optitXXXXX", dirpath=None, inames=None, onames=None):
+	def makeplots(self, suffix="_optitXXXXX", dirpath=None):
 		"""
 		Saves a bunch of default checkplots into the specified directory.
 		Can typically be called at the end of training, or after iterations.
@@ -256,11 +254,8 @@ class Training:
 		plot.sumevo(self, os.path.join(dirpath, "sumevo"+suffix+".png"))
 		plot.outdistribs(self, os.path.join(dirpath, "outdistribs"+suffix+".png"))
 		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
-		if inames is None:
-			inames = self.inames 
-		if onames is None:
-			onames = self.onames 
-		plot.netviz(self, inames, onames, filepath=os.path.join(dirpath, "netviz"+suffix+".png"))
+
+		plot.netviz(self, filepath=os.path.join(dirpath, "netviz"+suffix+".png"))
 		logger.info("Done with plots")
 
 

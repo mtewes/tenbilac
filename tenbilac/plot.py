@@ -435,15 +435,11 @@ def get_color(v, pos="orange", neg="navy"):
 		c = neg
 	return c
 
-def netviz(train, inames=None, onames=None, title="default", legend=True, filepath=None):
+def netviz(train, title="default", legend=True, filepath=None):
 	"""
 	Draws a visualisation of the network in the style of the `Tensorflow` playground.
 	
 	:param train: the Train class for the network
-	:param inames: the names of the input features. If `None` simply write "Feature 0", ...
-		:type inames: list of the same length as the input features
-	:param onames: the names of the input features. If `None` simply write "Output 0", ...
-		:type onames: list of the same length as the input features
 	:param title: The string to display as title, if "default" writes activation fct + err fct. Default=`default`
 	:param legend: Whether to show the legend for the tickness of the lines and points. Default=`True`
 	:param filepath: The file path to save the data to. If `None` (default) shows the figures.
@@ -470,10 +466,9 @@ def netviz(train, inames=None, onames=None, title="default", legend=True, filepa
 		
 		if ii == 0 :
 			# Write the name of the features
-			if inames is None:
-				inames = [r"$\mathrm{{Feature\ {}}}$".format(i) for i in range(net.ni)]
+			inames = [r"$\mathrm{{{}}}$".format(i) for i in net.inames]
 			for iii, inp in enumerate(inames):
-				plt.text(ii-0.08, iii+dy, inp, horizontalalignment='right', verticalalignment='center')
+				plt.text(ii-0.08, iii+dy, inp.replace("_", "\_"), horizontalalignment='right', verticalalignment='center')
 		
 		if ii >= len(net.layers) - 1: 
 			flnis = np.arange(net.no)
@@ -496,10 +491,9 @@ def netviz(train, inames=None, onames=None, title="default", legend=True, filepa
 	plt.scatter(np.zeros_like(nos) + ii + 1, nos+dyf, **plt_kwargs)
 	
 	# Name the output
-	if onames is None:
-		onames = [r"$\mathrm{{Ouput\ {}}}$".format(i) for i in range(net.no)]
+	onames = [r"$\mathrm{{{}}}$".format(i) for i in net.onames]
 	for iii, inp in enumerate(onames):
-		plt.annotate(inp, xy=(ii+1.08, iii+dyf), horizontalalignment='left', verticalalignment='center')
+		plt.annotate(inp.replace("_", "\_"), xy=(ii+1.08, iii+dyf), horizontalalignment='left', verticalalignment='center')
 		
 	# Draw legend
 	if legend:
