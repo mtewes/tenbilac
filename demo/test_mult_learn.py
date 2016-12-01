@@ -1,7 +1,7 @@
 """
-Training z = x * y
+Training z = x * y with a single product unit, testing this mult neuron.
 
-But single realziation regression, not inverse regression.
+Single realziation, no noise in the data, not inverse regression.
 
 """
 
@@ -26,8 +26,6 @@ zs = xs * ys
 inputs = np.array([xs, ys])
 inputs = np.tile(inputs, (nrea, 1, 1))
 
-#inputs += 0.1*np.random.randn(inputs.size).reshape(inputs.shape)
-
 # This is 3D (rea, features=2, case)
 #print inputs
 #print inputs.shape
@@ -38,7 +36,6 @@ targets = np.array([zs])
 # This is 2D (feature=1, case)
 #print targets
 #print targets.shape
-
 
 
 inputnormer = tenbilac.data.Normer(inputs, type="sa1")
