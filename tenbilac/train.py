@@ -25,7 +25,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None, inames=None, onames=None):
+	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None, inames=None, onames=None):
 		"""
 
 		Sets up
@@ -51,6 +51,17 @@ class Training:
 		# Setting up the cost function
 		self.errfctname = errfctname
 		self.errfct = eval("err.{0}".format(self.errfctname))
+		if regulfctname is not None:
+			if regulweight is None:
+				raise ValueError("Regularisation is set, but no weight")
+			else:
+				if regulweight == 0:
+					logger.warning("Regularisation is set, but the weight is set to zero. Let's boldy go ahead anyhow.")
+				
+				self.regulfctname = regulfctname
+				self.regulfct = eval("regul.{0}".format(self.regulfctname))
+				self.regullam = regulweight
+				
 		
 		# We initialize some counters for the optimization:
 		self.optit = 0 # The iteration counter
