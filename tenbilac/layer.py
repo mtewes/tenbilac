@@ -112,7 +112,7 @@ class Layer():
 				txt.append("    output {inn} = {act} ( input * {weights} + {bias} )".format(
 					inn=inn, act=self.actfct.__name__, weights=self.weights[inn,:], bias=self.biases[inn]))
 			elif self.mode == "mult":
-				txt.append("    output {inn} = {act} ( prod (input ** {weights}) + {bias} )".format(
+				txt.append("    output {inn} = {act} ( sign * prod (input ** {weights}) +(???) {bias} )".format(
 					inn=inn, act=self.actfct.__name__, weights=self.weights[inn,:], bias=self.biases[inn]))
 		return "\n".join(txt)
 	
@@ -188,7 +188,7 @@ class Layer():
 		elif self.mode == "mult":
 			
 			signlim = 0.5
-			self.biases *= 0.0
+			self.biases *= 0.0 # For now I kill those: biases have no effect. Remains to be explored how to use them best.
 			
 			if inputs.ndim == 1:		
 				# The test used as exponent has to be False if we want to ignore the sign, True to use it
