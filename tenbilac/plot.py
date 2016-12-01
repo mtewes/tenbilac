@@ -449,7 +449,6 @@ def netviz(train, inames=None, onames=None, title="default", legend=True, filepa
 	:param filepath: The file path to save the data to. If `None` (default) shows the figures.
 	"""
 	
-	errfct = train.errfct.__name__
 	net = train.net
 	
 	nmax = np.amax([net.ni, net.no, np.amax(net.nhs)]) * 1.
@@ -458,7 +457,7 @@ def netviz(train, inames=None, onames=None, title="default", legend=True, filepa
 	ax = fig.add_subplot(111)
 	if title == "default":
 		title = "".join([r"$\mathrm{{{n}/{actfct}\ }}$".format(n=l.nn, actfct=l.actfct.__name__) for l in net.layers])
-		title += r"$; \mathrm{{{}}}$".format(errfct)
+		title += r"$; \mathrm{{{}}}$".format(train.get_costfctname())
 	plt.title(title)
 	
 	plt_kwargs = {'marker':'s', 's':40, 'c':'k', 'zorder':1}

@@ -57,8 +57,9 @@ class Training:
 				raise ValueError("Regularisation is set, but no weight")
 			else:
 				if regulweight == 0:
-					logger.warning("Regularisation is set, but the weight is set to zero. Let's boldy go ahead anyhow.")
-				
+					logger.warning("Regularisation is set, but the weight is zero! Let's boldy go ahead anyhow.")
+				elif regulweight < 0:
+					logger.warning("Regularisation is set, but the weight is negative! Let's boldy go ahead anyhow.")
 				self.regulfctname = regulfctname
 				self.regulfct = eval("regul.{0}".format(self.regulfctname))
 				self.regullam = regulweight
@@ -154,8 +155,18 @@ class Training:
 			datstr = str(self.dat)
 		else: # Otherwise, we use datstr as backup solution.
 			datstr = getattr(self, "datstr", "Ouch!") # To ensure that it works also if datstr is missing (backwards compatibility).
-		autotxt = "{self.errfctname}({self.net}, {datstr})".format(self=self, datstr=datstr)				
+
+		autotxt = "{ef}({self.net}, {datstr})".format(ef=self.get_costfctname(), self=self, datstr=datstr)				
 		return autotxt
+	
+	def get_costfctname(self):
+		"""
+		Returns a string with a description of the cost function
+		"""
+		txterrfct = "{self.errfctname}".format(self=self)
+		if self.regullam is not None:
+			txterrfct += "+{self.regulfctname}".format(self=self)
+		return txterrfct
 	
 	def title(self):
 		"""
