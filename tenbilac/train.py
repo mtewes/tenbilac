@@ -16,6 +16,7 @@ from . import utils
 from . import err
 from . import act
 from . import plot
+from . import regul
 
 
 
@@ -25,7 +26,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None, inames=None, onames=None):
+	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None, inames=None, onames=None):
 		"""
 
 		Sets up
@@ -51,6 +52,20 @@ class Training:
 		# Setting up the cost function
 		self.errfctname = errfctname
 		self.errfct = eval("err.{0}".format(self.errfctname))
+		if regulfctname is not None:
+			if regulweight is None:
+				raise ValueError("Regularisation is set, but no weight")
+			else:
+				if regulweight == 0:
+					logger.warning("Regularisation is set, but the weight is zero! Let's boldy go ahead anyhow.")
+				elif regulweight < 0:
+					logger.warning("Regularisation is set, but the weight is negative! Let's boldy go ahead anyhow.")
+				self.regulfctname = regulfctname
+				self.regulfct = eval("regul.{0}".format(self.regulfctname))
+				self.regullam = regulweight
+		else:
+			self.regullam = None
+				
 		
 		# We initialize some counters for the optimization:
 		self.optit = 0 # The iteration counter
@@ -140,8 +155,18 @@ class Training:
 			datstr = str(self.dat)
 		else: # Otherwise, we use datstr as backup solution.
 			datstr = getattr(self, "datstr", "Ouch!") # To ensure that it works also if datstr is missing (backwards compatibility).
-		autotxt = "{self.errfctname}({self.net}, {datstr})".format(self=self, datstr=datstr)				
+
+		autotxt = "{ef}({self.net}, {datstr})".format(ef=self.get_costfctname(), self=self, datstr=datstr)				
 		return autotxt
+	
+	def get_costfctname(self):
+		"""
+		Returns a string with a description of the cost function
+		"""
+		txterrfct = "{self.errfctname}".format(self=self)
+		if hasattr(self, 'self.regullam') and self.regullam is not None:
+			txterrfct += "+{self.regulfctname}".format(self=self)
+		return txterrfct
 	
 	def title(self):
 		"""
@@ -319,6 +344,11 @@ class Training:
 		if self.dat.trainoutputsmask is not None:
 			outputs = np.ma.array(outputs, mask=self.dat.trainoutputsmask)
 		err = self.errfct(outputs, self.dat.traintargets, auxinputs=self.dat.trainauxinputs)
+		
+		if self.regullam is not None:
+			# TODO: Is there a faster way to do this?
+			weights = np.concatenate(([(l.weights).flatten() for l in self.net.layers]))
+			err += self.regullam * self.regulfct(weights) 
 			
 		self.opterr = err
 		self.optcall += 1
