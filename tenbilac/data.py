@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 class Normer:
 	"""
 	A Normer provides methods to "normalize" and later "denormalize" a numpy array, linearly rescaling it to be within 0 and 1 (type="01"),
-	-1 and 1 (type="-11"), or around 0 with a std of 1 (type="std").
+	-1 and 1 (type="-11"), around 0 with a std of 1 (type="std"), or just factor-scaling it so that the maximum absolute value is 1 (type="sa1").
 	
-	For each feature, the same normalization is applied to all realizations of all galaxies.
+	For each feature, the same normalization is applied to all realizations of all cases.
 	The details of the normalization are kept in the Normer object, so that one can simply use the same
 	object to denorm stuff afterwards.
 	
@@ -55,12 +55,27 @@ class Normer:
 				
 				# All these np.min, np.max, np.mean, np.std work as expected also with masked arrays.
 			elif x.ndim == 2:
-				mins = np.min(x, axis=1) # Only along the second axes (i.e., "galaxies")
+				mins = np.min(x, axis=1) # Only along the second axes (i.e., "cases")
 				dists = np.max(x, axis=1) - mins
 							
 			self.a = mins
 			self.b = dists
+		
+		elif type == "sa1":
+			# We only rescale the values so that the max amplitude is 1. This ensures that signs are kept.
+			
+			if x.ndim == 3:# If we have several realizations:
+				scales = np.max(np.max(np.fabs(x), axis=0), axis=1) # max absolute value along the first and thrid axis.
+			
+			elif x.ndim == 2:
+				scales = np.max(np.fabs(x), axis=1) # Only along the second axes (i.e., "cases")
 				
+			assert scales.ndim == 1 # Only the "feature" dimension remains.
+			
+			self.b = scales
+			self.a = np.zeros(scales.shape)
+			
+					
 		elif type == "std":
 			
 			if x.ndim == 3: # First using rollaxis to reshape array instead of using fancy reshape modes seemed safer...
@@ -91,6 +106,7 @@ class Normer:
 		Returns the normalized data.
 		"""
 		
+		logger.info("Normalizing array of shape {} with normer-type '{}'".format(x.shape, self.type))
 		if x.ndim not in (2, 3):
 			raise ValueError("Cannot handle this array shape")
 

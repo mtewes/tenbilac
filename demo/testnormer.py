@@ -13,10 +13,10 @@ no = 1
 noise_scale = 1.0
 
 # 3D case:
-inputs = np.random.randn(ni * ngal * nrea).reshape((nrea, ni, ngal))*1.0 + 15.0
+inputs = np.random.randn(ni * ngal * nrea).reshape((nrea, ni, ngal))*1.0 + 5.0
 
 # Modifying one of the features:
-inputs[:,2,:] += 10.0
+inputs[:,2,:] -= 5.0
 
 # 2D case:
 #inputs = np.random.randn(ni * ngal).reshape((ni, ngal))*1000.0 + 15.0
@@ -26,7 +26,9 @@ print inputs
 print inputs.shape
 
 
-normer = tenbilac.data.Normer(inputs, type="-11")
+normer = tenbilac.data.Normer(inputs, type="sa1")
+
+print normer
 
 normed = normer(inputs)
 

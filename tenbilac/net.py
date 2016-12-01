@@ -18,10 +18,10 @@ class Net():
 	Object representing a network made out of one or several hidden layers.
 	"""
 	
-	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", oactfctname="iden", name=None, inames=None, onames=None):
+	def __init__(self, ni, nhs, no=1, onlyid=False, actfctname="tanh", oactfctname="iden", multactfctname="iden", name=None, inames=None, onames=None):
 		"""
 		:param ni: Number of input features
-		:param nhs: Numbers of neurons in hidden layers
+		:param nhs: Numbers of neurons in hidden layers. Times -1 if you want product units in that layer.
 		:type nhs: tuple
 		:param no: Number of ouput neurons
 		:param onlyid: Set this to true if you want identity activation functions on all layers
@@ -60,13 +60,19 @@ class Net():
 				raise RuntimeError("Your number of onames is wrong")
 		
 		iniarch = np.array([self.ni]+self.nhs+[self.no]) # Note that we do not save this. Layers might evolve dynamically in future!
-
+		
 		actfct = eval("act.{0}".format(actfctname)) # We turn the string actfct option into an actual function
 		oactfct = eval("act.{0}".format(oactfctname)) # idem
+		multactfct = eval("act.{0}".format(multactfctname)) # idem
 		
 		self.layers = [] # We build a list containing only the hidden layers and the output layer
 		for (i, nh) in enumerate(self.nhs):
-				self.layers.append(layer.Layer(ni=iniarch[i], nn=nh, actfct=actfct, name="h"+str(i)))
+			if nh > 0:
+				self.layers.append(layer.Layer(ni=iniarch[i], nn=nh, actfct=actfct, name="h"+str(i), mode="sum"))
+			elif nh < 0: # a "mult"-layer
+				self.layers.append(layer.Layer(ni=iniarch[i], nn=-nh, actfct=multactfct, name="h"+str(i), mode="mult"))
+			else:
+				raise ValueError("Cannot have 0 hidden nodes")
 		# Adding the output layer:
 		self.layers.append(layer.Layer(ni=self.nhs[-1], nn=no, actfct=oactfct, name="o"))
 		
@@ -84,7 +90,7 @@ class Net():
 		"""
 		#return "Tenbilac with architecture {self.arch} and {nparams} params".format(self=self, nparams=self.nparams())
 		#archtxt = str(self.ni) + "|" + "|".join(["{n}/{actfct}".format(n=l.nn, actfct=l.actfct.__name__) for l in self.layers])
-		archtxt = str(self.ni) + "|" + "|".join(["{n}/{actfct}".format(n=l.nn, actfct=l.actfct.__name__) for l in self.layers])
+		archtxt = str(self.ni) + "|" + "|".join(["{n}/{modecode}{actfct}".format(n=l.nn, modecode=l.modecode(), actfct=l.actfct.__name__) for l in self.layers])
 		#autotxt = "[{archtxt}]({nparams})".format(archtxt=archtxt, nparams=self.nparams())
 		autotxt = "[{archtxt}={nparams}]".format(archtxt=archtxt, nparams=self.nparams())
 		
@@ -197,25 +203,23 @@ class Net():
 			l.addnoise(**kwargs)
 			
 			
-	def setidentity(self):
+	def setidentity(self, **kwargs):
 		"""
 		Adjusts the network parameters so to approximatively get an identity relation
 		between the ith output and the ith input (for each i in the outputs).
 		
 		This should be a good starting position for "calibration" tasks. Example: first
-		input feature is observed galaxy ellipticity g11, and first output is true g1.
+		input feature is observed galaxy ellipticity e1, and first output is shear g1.
 		"""
 
 		for l in self.layers:
-			l.zero() # Sets everything to zero
 			if l.nn < self.no or self.ni < self.no:
 				raise RuntimeError("Network is too small for setting identity!")
 			
-		for io in range(self.no):
-			for l in self.layers:
-				l.weights[io, io] = 1.0 # Now we set selected weights to 1.0 (leaving biases at 0.0)
+		for l in self.layers:
+				l.setidentity(**kwargs)
 			
-		logger.info("Set identity weights")
+		logger.info("Done with setting weights to identity.")
 			
 
 	def run(self, inputs):
