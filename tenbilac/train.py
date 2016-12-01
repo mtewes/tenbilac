@@ -164,7 +164,7 @@ class Training:
 		Returns a string with a description of the cost function
 		"""
 		txterrfct = "{self.errfctname}".format(self=self)
-		if self.regullam is not None:
+		if hasattr(self, 'self.regullam') and self.regullam is not None:
 			txterrfct += "+{self.regulfctname}".format(self=self)
 		return txterrfct
 	
