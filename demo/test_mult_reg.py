@@ -28,7 +28,7 @@ zs = xs * ys
 inputs = np.array([xs, ys])
 inputs = np.tile(inputs, (nrea, 1, 1))
 # We add noise:
-inputs += 0.1*np.random.randn(inputs.size).reshape(inputs.shape)
+inputs += 0.001*np.random.randn(inputs.size).reshape(inputs.shape)
 
 # This is 3D (rea, features=2, case)
 #print inputs
@@ -58,10 +58,10 @@ net = tenbilac.net.Net(ni=2, nhs=[-1], no=1, actfctname="iden", oactfctname="ide
 
 # The exact solution:
 net.setidentity()
-net.layers[0].weights[0,1] = 1.0
-net.layers[1].weights[0] = ((inputnormer.b[0]*inputnormer.b[1])/targetnormer.b[0])
+#net.layers[0].weights[0,1] = 1.0
+#net.layers[1].weights[0] = ((inputnormer.b[0]*inputnormer.b[1])/targetnormer.b[0])
 
-#net.addnoise(multwscale=0.5, wscale=0.1, bscale=0.1)
+net.addnoise(multwscale=0.5, wscale=0.1, bscale=0.1)
 
 
 print net.report()
@@ -69,10 +69,12 @@ print net.report()
 
 training = tenbilac.train.Training(net, dat, errfctname="msb", autoplot=False, autoplotdirpath=".")
 
-training.bfgs(maxiter=10, gtol=1e-8)
+#training.bfgs(maxiter=10, gtol=1e-8)
 #training.cg(maxiter=20)
+#training.minibatch_bfgs(mbsize=None, mbfrac=0.5, mbloops=3, maxiter=15)
 
-#training.minibatch_bfgs(self, mbsize=None, mbfrac=0.1, mbloops=1, maxiter=10)
+training.opt(algo="brute", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=15, gtol=1e-8)
+training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=15, gtol=1e-8)
 
 print net.report()
 
@@ -90,6 +92,7 @@ meanres = np.mean(residues, axis=0)
 stdres = np.std(residues, axis=0)
 assert meanres.size == ncas
 
+#exit()
 import matplotlib.pyplot as plt
 
 

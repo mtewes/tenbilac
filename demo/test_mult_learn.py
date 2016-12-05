@@ -65,7 +65,7 @@ print net.report()
 
 training = tenbilac.train.Training(net, dat, errfctname="mse", autoplot=False, autoplotdirpath="plots")
 
-training.bfgs(maxiter=50, gtol=1e-8)
+training.opt(algo="bfgs", maxiter=50, gtol=1e-8)
 
 
 print net.report()

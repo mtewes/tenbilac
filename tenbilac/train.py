@@ -3,7 +3,6 @@ Training a network happens here
 """
 
 import numpy as np
-import scipy.optimize
 from datetime import datetime
 import os
 import copy
@@ -17,6 +16,7 @@ from . import err
 from . import act
 from . import plot
 from . import regul
+from . import opt
 
 
 
@@ -263,6 +263,7 @@ class Training:
 		"""
 		Called a the beginning of a training 
 		"""
+		logger.info("Starting an optimization cycle...")
 		self.testcost()
 		self.iterationstarttime = datetime.now()
 		self.optitcall = 0
@@ -274,6 +275,7 @@ class Training:
 		"""
 		self.optitcall = 0
 		logger.info("Cumulated training time: {0:.2f} s".format(np.sum(self.optittimes)))
+		logger.info("Optimization cycle finished.")
 		if self.autoplot:
 			self.makeplots()
 		
@@ -360,6 +362,7 @@ class Training:
 	def currentcost(self):
 		return self.cost(p=self.params[self.paramslice])
 
+
 	def testcost(self):
 		"""
 		Calls the cost function and logs some info.
@@ -391,62 +394,83 @@ class Training:
 		
 		return err
 		
-	
-	
-	def minibatch_bfgs(self, mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
+
+
+	def opt(self, algo="brute", mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
+		"""
+		General optimization of the network parameters by an algorithm, with support for minibatches.
+		Just set mbfrac and mbloops to 1 if you don't want minibatches.
+		Using "algo" and not "method" so that "method" can be a kwarg passed to scipy.optimize.fmin...
+		"""
+		
+		optfct = eval("opt.{0}".format(algo)) # Turn the string into an acutal function
 		
 		for loopi in range(mbloops):
 			if mbloops > 1:
 				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi+1, mbloops=mbloops))
 			self.dat.random_minibatch(mbsize=mbsize, mbfrac=mbfrac)
 			self.optbatchchangeits.append(self.optit) # We record this minibatch change
-			self.bfgs(**kwargs)
+			
+			self.start()
+			optfct(self, **kwargs) # Call the optfct, with the training object as first argument
+			
+			logger.info("Done with optimization")
+			self.end()
+
+
+
+#	
+#	def minibatch_bfgs(self, mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
+#		
+#		for loopi in range(mbloops):
+#			if mbloops > 1:
+#				logger.info("Starting minibatch loop {loopi} of {mbloops}...".format(loopi=loopi+1, mbloops=mbloops))
+#			self.dat.random_minibatch(mbsize=mbsize, mbfrac=mbfrac)
+#			self.optbatchchangeits.append(self.optit) # We record this minibatch change
+#			self.bfgs(**kwargs)
 			
 	
 
-	def bfgs(self, maxiter=100, gtol=1e-8):
-		
-		self.start()
-		logger.info("Starting BFGS for {} iterations (maximum) with gtol={}...".format(maxiter, gtol))
-		
-		optres = scipy.optimize.fmin_bfgs(
-			self.cost, self.params[self.paramslice],
-			fprime=None,
-			maxiter=maxiter, gtol=gtol,
-			full_output=True, disp=True, retall=False, callback=self.callback)
-		
-		if len(optres) == 7:
-			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag) = optres
-			self.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
-			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
-		else:
-			logger.warning("Optimization output is fishy")
-		
-		self.end()
+#	def bfgs(self, maxiter=100, gtol=1e-8):
+#		
+#		self.start()
+#		logger.info("Starting BFGS for {} iterations (maximum) with gtol={}...".format(maxiter, gtol))
+#		
+#		optres = scipy.optimize.fmin_bfgs(
+#			self.cost, self.params[self.paramslice],
+#			fprime=None,
+#			maxiter=maxiter, gtol=gtol,
+#			full_output=True, disp=True, retall=False, callback=self.callback)
+#		
+#		if len(optres) == 7:
+#			(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag) = optres
+#			self.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
+#			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
+#		else:
+#			logger.warning("Optimization output is fishy")
+#		
+#		self.end()
 	
 
 
-	def cg(self, maxiter):
-		
-		self.start()
-		logger.info("Starting CG for {0} iterations (maximum)...".format(maxiter))
-		
-		optres = scipy.optimize.fmin_cg(
-			self.cost, self.params,
-			fprime=None, gtol=1e-05,
-			maxiter=maxiter, full_output=True, disp=True, retall=False, callback=self.callback)
-			
-		if len(optres) == 5:
-			(xopt, fopt, func_calls, grad_calls, warnflag) = optres
-			self.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
-			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
-		else:
-			logger.warning("Optimization output is fishy")
-	
-		self.end()
-	
-
-
+#	def cg(self, maxiter):
+#		
+#		self.start()
+#		logger.info("Starting CG for {0} iterations (maximum)...".format(maxiter))
+#		
+#		optres = scipy.optimize.fmin_cg(
+#			self.cost, self.params,
+#			fprime=None, gtol=1e-05,
+#			maxiter=maxiter, full_output=True, disp=True, retall=False, callback=self.callback)
+#			
+#		if len(optres) == 5:
+#			(xopt, fopt, func_calls, grad_calls, warnflag) = optres
+#			self.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
+#			logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
+#		else:
+#			logger.warning("Optimization output is fishy")
+#	
+#		self.end()
 
 
 #	def anneal(self, maxiter=100):
