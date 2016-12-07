@@ -11,6 +11,8 @@ import matplotlib.patches
 import matplotlib.lines
 from matplotlib.path import Path
 import matplotlib.patches as patches
+import matplotlib.cm
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from . import err
 from . import net
@@ -148,6 +150,75 @@ def sumevo(train, filepath=None, showtimes=True):
 		plt.savefig(filepath)
 	plt.close() # Important, otherwise it's still around for the next plt.show()
 
+
+
+def biasevo(train, filepath=None):
+	"""
+	Viz of the evolution of the individual bias terms at each iteration (massive!)
+	"""
+	
+	trainbiases = np.array(train.optitbiases_train) # Members of this list have shape (outputs, cases). Now its (iterations, outputs, cases)
+	
+	nit = trainbiases.shape[0] # Members of this list have shape (outputs, cases)
+	if nit < 1:
+		logger.warning("No iterations to plot!")
+		return
+	ncas = trainbiases.shape[2]
+	
+	# For colors, we get the input data
+	if train.dat is None:
+		logger.warning("Need dat!")
+		return
+	meantraininputs = np.mean(train.dat.fulltraininputs, axis=0) # shape is (feature, case)
+	print meantraininputs.shape
+	#exit()
+	
+	logger.info("Preparing plot with {} cases and {} iterations".format(ncas, nit))
+
+	optits = np.arange(len(train.optitparams))
+	optbatchchangeits = getattr(train, "optbatchchangeits", [])
+
+	fig = plt.figure(figsize=(8*train.net.no, 5*train.net.ni))
+	
+	for io in range(train.net.no):
+		for ii in range(train.net.ni):
+			ax = plt.subplot(train.net.ni, train.net.no, io*train.net.ni+1+ii)
+			
+			for optbatchchangeit in optbatchchangeits:
+				ax.axvline(optbatchchangeit, color="gray", zorder=-20)
+			ax.axhline(0.0, color="gray", zorder=-20)
+			
+			cmap = matplotlib.cm.get_cmap("jet")
+			sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=np.min(meantraininputs[ii,:]), vmax=np.max(meantraininputs[ii,:])))
+			
+			for icas in range(ncas):
+				plt.plot(optits, trainbiases[:,io, icas], color=sm.to_rgba(meantraininputs[ii, icas]), alpha=0.1)
+		
+			ax.set_xlabel("Iteration")
+			ax.set_ylabel("Bias on target '{}'".format(train.net.onames[io]))
+	
+			ax.set_yscale("symlog", linthreshy=1.e-3, linscaley=1)
+			
+			# fake up the array of the scalar mappable. Urgh...
+			#sm._A = []
+			sm.set_array([])
+			#divider = make_axes_locatable(ax)
+			#cax = divider.append_axes("right", "5%", pad="3%")
+			cax = plt.colorbar(sm)
+			cax.set_label("Feature '{}' (mean accross reas)".format(train.net.inames[ii]))
+			
+		
+		
+	
+	plt.tight_layout()
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing biasevo to {0}".format(filepath))
+		plt.savefig(filepath)
+	plt.close() # Important, otherwise it's still around for the next plt.show()
+
+	
 
 def outdistribs(train, filepath=None):
 	"""

@@ -26,7 +26,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, saveoptitbiases=True, verbose=False, name=None):
 		"""
 
 		Sets up
@@ -82,6 +82,10 @@ class Training:
 		self.optitcalls = [] # The cost function call counter at each iteration
 		self.optittimes = [] # Time taken for iteration, in seconds
 		self.optbatchchangeits = [] # Iteration counter (in fact indices) when the batche gets changed
+		
+		self.saveoptitbiases = saveoptitbiases # Should we save all the biases at each iteration ? WARNING, this can get massive !!! 
+		self.optitbiases_train = []
+		self.optitbiases_val = []
 		
 		self.verbose = verbose
 		self.itersavepath = itersavepath
@@ -212,6 +216,8 @@ class Training:
 		except AttributeError:
 			self.optbatchchangeits = []
 		
+		self.optitbiases_train = othertrain.optitbiases_train
+		self.optitbiases_val = othertrain.optitbiases_val
 
 		logger.info("Done with the takeover")
 		
@@ -256,6 +262,10 @@ class Training:
 		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
 
 		plot.netviz(self, filepath=os.path.join(dirpath, "netviz"+suffix+".png"))
+		
+		if self.saveoptitbiases:
+			plot.biasevo(self, os.path.join(dirpath, "biasevo"+suffix+".png"))
+		
 		logger.info("Done with plots")
 
 
@@ -302,6 +312,12 @@ class Training:
 		self.optiterrs_train.append(self.opterr)
 		self.optitcalls.append(self.optcall)
 		self.optitparams.append(copy.deepcopy(self.params)) # We add a copy of the current params
+		
+		if self.saveoptitbiases: # Warning, massive and slow
+			# We get the bias terms on the validation and training sets
+			
+			self.optitbiases_train.append(self.biases(onwhat="train"))
+			self.optitbiases_val.append(self.biases(onwhat="val"))
 		
 		# Now we evaluate the cost on the validation set:
 		valerr = self.valcost()
@@ -394,6 +410,24 @@ class Training:
 		
 		return err
 		
+	def biases(self, onwhat="train"):
+		"""
+		For plotting purposes only: returns the bias terms on the train and validation sets.
+		A bit ugly, all this duplication :-/
+		Note that we use the FULL training data, not only the current batch.
+		"""
+		if onwhat is "train":
+			outputs = self.net.run(self.dat.fulltraininputs) # This is not a masked array!
+			if self.dat.fulltrainoutputsmask is not None:
+				outputs = np.ma.array(outputs, mask=self.dat.fulltrainoutputsmask)		
+			return np.mean(outputs, axis=0) - self.dat.fulltraintargets
+		elif onwhat is "val":
+			outputs = self.net.run(self.dat.valinputs) # This is not a masked array!
+			if self.dat.valoutputsmask is not None:
+				outputs = np.ma.array(outputs, mask=self.dat.valoutputsmask)
+			return np.mean(outputs, axis=0) - self.dat.valtargets
+		else:
+			raise RuntimeError("Unknown onwhat")
 
 
 	def opt(self, algo="brute", mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
