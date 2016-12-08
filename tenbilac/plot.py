@@ -11,6 +11,8 @@ import matplotlib.patches
 import matplotlib.lines
 from matplotlib.path import Path
 import matplotlib.patches as patches
+import matplotlib.cm
+#from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from . import err
 from . import net
@@ -148,6 +150,77 @@ def sumevo(train, filepath=None, showtimes=True):
 		plt.savefig(filepath)
 	plt.close() # Important, otherwise it's still around for the next plt.show()
 
+
+
+def biasevo(train, filepath=None):
+	"""
+	Viz of the evolution of the individual bias terms at each iteration (massive!)
+	"""
+	
+	nsnaps = len(train.biassnaps_it)
+	if nsnaps < 1:
+		logger.warning("No snapshots to biasevo plot!")
+		return
+		
+		
+	trainbiases = np.array(train.biassnaps_train) # Members of this list have shape (outputs, cases). Now its (iterations, outputs, cases)
+	valbiases = np.array(train.biassnaps_val) # Members of this list have shape (outputs, cases). Now its (iterations, outputs, cases)
+	
+	biases = np.dstack((trainbiases, valbiases)) # shape is (iteration, output-neuron, case)
+	
+	assert nsnaps == biases.shape[0]
+	ncas = biases.shape[2]
+	
+	# For colors, we get the input data
+	if train.dat is None:
+		logger.warning("Need dat for biasevo plot!")
+		return
+	meantraininputs = np.mean(train.dat.fulltraininputs, axis=0) # shape is (feature, case)
+	meanvalinputs = np.mean(train.dat.valinputs, axis=0) # shape is (feature, case)
+	meaninputs = np.hstack((meantraininputs, meanvalinputs)) # shape is still (feature, case)
+	
+	assert meaninputs.shape[1] == biases.shape[2]
+	
+	logger.info("Preparing biasevo plot with {} cases and {} snapshots...".format(ncas, nsnaps))
+	
+
+	fig = plt.figure(figsize=(8*train.net.no, 5*train.net.ni))
+	
+	for io in range(train.net.no):
+		for ii in range(train.net.ni):
+			ax = plt.subplot(train.net.ni, train.net.no, io*train.net.ni+1+ii)
+			
+			#for optbatchchangeit in optbatchchangeits:
+			#	ax.axvline(optbatchchangeit, color="gray", zorder=-20)
+			ax.axhline(0.0, color="gray", zorder=-20)
+			
+			cmap = matplotlib.cm.get_cmap("jet")
+			sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=np.min(meaninputs[ii,:]), vmax=np.max(meaninputs[ii,:])))
+			
+			for icas in range(ncas):
+				plt.plot(train.biassnaps_it, biases[:,io, icas], color=sm.to_rgba(meaninputs[ii, icas]), alpha=0.1)
+		
+			ax.set_xlabel("Iteration (only snapshots at minibatch-changes are shown)")
+			ax.set_ylabel("Bias on target '{}'".format(train.net.onames[io]))
+	
+			ax.set_yscale("symlog", linthreshy=1.e-3, linscaley=1)
+			
+			# fake up the array of the scalar mappable. Urgh...
+			#sm._A = []
+			sm.set_array([])
+			cax = plt.colorbar(sm)
+			cax.set_label("Feature '{}' (mean across reas)".format(train.net.inames[ii]))
+			
+	
+	plt.tight_layout()
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing biasevo to {0}".format(filepath))
+		plt.savefig(filepath)
+	plt.close() # Important, otherwise it's still around for the next plt.show()
+
+	
 
 def outdistribs(train, filepath=None):
 	"""

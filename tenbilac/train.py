@@ -26,13 +26,21 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, saveeachit=False, autoplotdirpath=".", autoplot=False, trackbiases=False, verbose=False, name=None):
 		"""
 
 		Sets up
 		- housekeeping lists
 		- error function
-				
+		
+		:param trackbiases: If True, will track and plot the evolution of biases as function of input feature values.
+			Could get massive and slow down the training. Also the plot is rather slow. 
+		:type trackbiases: bool
+		
+		:param saveeachit: If True, writes the full status and history to disk at each iteration.
+			If False, only some snapshots are written, but they still contain the full history!
+		:type saveeachtit: bool
+			
 		"""
 		
 		self.name = name
@@ -83,8 +91,14 @@ class Training:
 		self.optittimes = [] # Time taken for iteration, in seconds
 		self.optbatchchangeits = [] # Iteration counter (in fact indices) when the batche gets changed
 		
+		self.trackbiases = trackbiases # Should we save all the biases at each snapshot (e.g. minibatch-change) (and make the related plots) ?
+		self.biassnaps_train = []
+		self.biassnaps_val = []
+		self.biassnaps_it = [] # Iteration counter of snapshot
+		
 		self.verbose = verbose
 		self.itersavepath = itersavepath
+		self.saveeachit = saveeachit
 		
 		self.autoplotdirpath = autoplotdirpath
 		self.autoplot = autoplot
@@ -212,6 +226,9 @@ class Training:
 		except AttributeError:
 			self.optbatchchangeits = []
 		
+		self.biassnaps_train = othertrain.biassnaps_train
+		self.biassnaps_val = othertrain.biassnaps_val
+		self.biassnaps_it = othertrain.biassnaps_it
 
 		logger.info("Done with the takeover")
 		
@@ -256,6 +273,10 @@ class Training:
 		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
 
 		plot.netviz(self, filepath=os.path.join(dirpath, "netviz"+suffix+".png"))
+		
+		if self.trackbiases:
+			plot.biasevo(self, os.path.join(dirpath, "biasevo"+suffix+".png"))
+		
 		logger.info("Done with plots")
 
 
@@ -272,10 +293,16 @@ class Training:
 	def end(self):
 		"""
 		Called at the end of a training (each minibatch) depening on the algo.
+		This is also a moment to save what we have to disk.
 		"""
 		self.optitcall = 0
 		logger.info("Cumulated training time: {0:.2f} s".format(np.sum(self.optittimes)))
 		logger.info("Optimization cycle finished.")
+		if self.trackbiases:
+			self.savebiasdetails()
+		if self.itersavepath != None:
+			if not self.saveeachit: # Indeed, otherwise no need to save it at this stage!
+				self.save(self.itersavepath)
 		if self.autoplot:
 			self.makeplots()
 		
@@ -302,7 +329,7 @@ class Training:
 		self.optiterrs_train.append(self.opterr)
 		self.optitcalls.append(self.optcall)
 		self.optitparams.append(copy.deepcopy(self.params)) # We add a copy of the current params
-		
+				
 		# Now we evaluate the cost on the validation set:
 		valerr = self.valcost()
 		self.optiterrs_val.append(valerr)
@@ -315,7 +342,8 @@ class Training:
 			self=self, ef=self.get_costfctname(), time=secondstaken, valerr=valerr, valerrratio=valerrratio, calls=callstaken, mscallcase=mscallcase))
 		
 		if self.itersavepath != None:
-			self.save(self.itersavepath)
+			if self.saveeachit:
+				self.save(self.itersavepath)
 		
 		# We reset the iteration counters:
 		self.iterationstarttime = datetime.now()
@@ -394,7 +422,30 @@ class Training:
 		
 		return err
 		
+	def savebiasdetails(self):
+		"""
+		Appends bias details to some internal lists.
+		For plotting purposes only.
+		A bit ugly, all this duplication :-/
+		Note that we use the FULL training data, not only the current batch.
+		"""
+		logger.info("Saving bias details...")
+		fulltrainoutputs = self.net.run(self.dat.fulltraininputs) # This is not a masked array!
+		if self.dat.fulltrainoutputsmask is not None:
+			fulltrainoutputs = np.ma.array(fulltrainoutputs, mask=self.dat.fulltrainoutputsmask)		
+		fulltrainbiases = np.mean(fulltrainoutputs, axis=0) - self.dat.fulltraintargets
+		
+		valoutputs = self.net.run(self.dat.valinputs) # This is not a masked array!
+		if self.dat.valoutputsmask is not None:
+			valoutputs = np.ma.array(valoutputs, mask=self.dat.valoutputsmask)
+		valbiases = np.mean(valoutputs, axis=0) - self.dat.valtargets
+		
+		# Those 2 arrays have shape (neuron, cases)
+		self.biassnaps_train.append(fulltrainbiases)
+		self.biassnaps_val.append(valbiases)
+		self.biassnaps_it.append(self.optit) # We record the iteration counter
 
+		
 
 	def opt(self, algo="brute", mbsize=None, mbfrac=0.1, mbloops=10, **kwargs):
 		"""
