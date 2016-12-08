@@ -26,7 +26,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, autoplotdirpath=".", autoplot=False, trackbiases=False, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, saveeachit=False, autoplotdirpath=".", autoplot=False, trackbiases=False, verbose=False, name=None):
 		"""
 
 		Sets up
@@ -35,7 +35,11 @@ class Training:
 		
 		:param trackbiases: If True, will track and plot the evolution of biases as function of input feature values.
 			Could get massive and slow down the training. Also the plot is rather slow. 
-		:type trackbiases: Bool
+		:type trackbiases: bool
+		
+		:param saveeachit: If True, writes the full status and history to disk at each iteration.
+			If False, only some snapshots are written, but they still contain the full history!
+		:type saveeachtit: bool
 			
 		"""
 		
@@ -94,6 +98,7 @@ class Training:
 		
 		self.verbose = verbose
 		self.itersavepath = itersavepath
+		self.saveeachit = saveeachit
 		
 		self.autoplotdirpath = autoplotdirpath
 		self.autoplot = autoplot
@@ -288,12 +293,16 @@ class Training:
 	def end(self):
 		"""
 		Called at the end of a training (each minibatch) depening on the algo.
+		This is also a moment to save what we have to disk.
 		"""
 		self.optitcall = 0
 		logger.info("Cumulated training time: {0:.2f} s".format(np.sum(self.optittimes)))
 		logger.info("Optimization cycle finished.")
 		if self.trackbiases:
 			self.savebiasdetails()
+		if self.itersavepath != None:
+			if not self.saveeachit: # Indeed, otherwise no need to save it at this stage!
+				self.save(self.itersavepath)
 		if self.autoplot:
 			self.makeplots()
 		
@@ -333,7 +342,8 @@ class Training:
 			self=self, ef=self.get_costfctname(), time=secondstaken, valerr=valerr, valerrratio=valerrratio, calls=callstaken, mscallcase=mscallcase))
 		
 		if self.itersavepath != None:
-			self.save(self.itersavepath)
+			if self.saveeachit:
+				self.save(self.itersavepath)
 		
 		# We reset the iteration counters:
 		self.iterationstarttime = datetime.now()
