@@ -157,26 +157,32 @@ def biasevo(train, filepath=None):
 	Viz of the evolution of the individual bias terms at each iteration (massive!)
 	"""
 	
-	trainbiases = np.array(train.optitbiases_train) # Members of this list have shape (outputs, cases). Now its (iterations, outputs, cases)
-	
-	nit = trainbiases.shape[0] # Members of this list have shape (outputs, cases)
-	if nit < 1:
-		logger.warning("No iterations to plot!")
+	nsnaps = len(train.biassnaps_it)
+	if nsnaps < 1:
+		logger.warning("No snapshots to biasevo plot!")
 		return
-	ncas = trainbiases.shape[2]
+		
+		
+	trainbiases = np.array(train.biassnaps_train) # Members of this list have shape (outputs, cases). Now its (iterations, outputs, cases)
+	valbiases = np.array(train.biassnaps_val) # Members of this list have shape (outputs, cases). Now its (iterations, outputs, cases)
+	
+	biases = np.dstack((trainbiases, valbiases)) # shape is (iteration, output-neuron, case)
+	
+	assert nsnaps == biases.shape[0]
+	ncas = biases.shape[2]
 	
 	# For colors, we get the input data
 	if train.dat is None:
-		logger.warning("Need dat!")
+		logger.warning("Need dat for biasevo plot!")
 		return
 	meantraininputs = np.mean(train.dat.fulltraininputs, axis=0) # shape is (feature, case)
-	print meantraininputs.shape
-	#exit()
+	meanvalinputs = np.mean(train.dat.valinputs, axis=0) # shape is (feature, case)
+	meaninputs = np.hstack((meantraininputs, meanvalinputs)) # shape is still (feature, case)
 	
-	logger.info("Preparing plot with {} cases and {} iterations".format(ncas, nit))
-
-	optits = np.arange(len(train.optitparams))
-	optbatchchangeits = getattr(train, "optbatchchangeits", [])
+	assert meaninputs.shape[1] == biases.shape[2]
+	
+	logger.info("Preparing biasevo plot with {} cases and {} snapshots...".format(ncas, nsnaps))
+	
 
 	fig = plt.figure(figsize=(8*train.net.no, 5*train.net.ni))
 	
@@ -184,17 +190,17 @@ def biasevo(train, filepath=None):
 		for ii in range(train.net.ni):
 			ax = plt.subplot(train.net.ni, train.net.no, io*train.net.ni+1+ii)
 			
-			for optbatchchangeit in optbatchchangeits:
-				ax.axvline(optbatchchangeit, color="gray", zorder=-20)
+			#for optbatchchangeit in optbatchchangeits:
+			#	ax.axvline(optbatchchangeit, color="gray", zorder=-20)
 			ax.axhline(0.0, color="gray", zorder=-20)
 			
 			cmap = matplotlib.cm.get_cmap("jet")
-			sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=np.min(meantraininputs[ii,:]), vmax=np.max(meantraininputs[ii,:])))
+			sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=np.min(meaninputs[ii,:]), vmax=np.max(meaninputs[ii,:])))
 			
 			for icas in range(ncas):
-				plt.plot(optits, trainbiases[:,io, icas], color=sm.to_rgba(meantraininputs[ii, icas]), alpha=0.1)
+				plt.plot(train.biassnaps_it, biases[:,io, icas], color=sm.to_rgba(meaninputs[ii, icas]), alpha=0.1)
 		
-			ax.set_xlabel("Iteration")
+			ax.set_xlabel("Iteration (only snapshots at minibatch-changes are shown)")
 			ax.set_ylabel("Bias on target '{}'".format(train.net.onames[io]))
 	
 			ax.set_yscale("symlog", linthreshy=1.e-3, linscaley=1)
@@ -202,13 +208,9 @@ def biasevo(train, filepath=None):
 			# fake up the array of the scalar mappable. Urgh...
 			#sm._A = []
 			sm.set_array([])
-			#divider = make_axes_locatable(ax)
-			#cax = divider.append_axes("right", "5%", pad="3%")
 			cax = plt.colorbar(sm)
-			cax.set_label("Feature '{}' (mean accross reas)".format(train.net.inames[ii]))
+			cax.set_label("Feature '{}' (mean across reas)".format(train.net.inames[ii]))
 			
-		
-		
 	
 	plt.tight_layout()
 	if filepath is None:
