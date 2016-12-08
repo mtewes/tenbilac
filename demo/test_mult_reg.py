@@ -67,12 +67,8 @@ net.addnoise(multwscale=0.5, wscale=0.1, bscale=0.1)
 print net.report()
 
 
-training = tenbilac.train.Training(net, dat, errfctname="msb", autoplot=True, autoplotdirpath=".")
-#training.saveoptitbiases = True
+training = tenbilac.train.Training(net, dat, errfctname="msb", autoplot=True, trackbiases=True, autoplotdirpath=".")
 
-#training.bfgs(maxiter=10, gtol=1e-8)
-#training.cg(maxiter=20)
-#training.minibatch_bfgs(mbsize=None, mbfrac=0.5, mbloops=3, maxiter=15)
 
 training.opt(algo="brute", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=15, gtol=1e-8)
 training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=15, gtol=1e-8)
@@ -94,8 +90,8 @@ stdres = np.std(residues, axis=0)
 assert meanres.size == ncas
 
 
-training.save("test.pkl", keepdata=True)
-exit()
+#training.save("test.pkl", keepdata=True)
+#exit()
 import matplotlib.pyplot as plt
 
 
