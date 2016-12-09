@@ -4,8 +4,8 @@ This first layer needs special initialization, and is not optimized at the same 
 
 
 Things to keep in mind:
- - don't setidentity, you would loose the custom initialization
- - you probably don't want to add noise to the mult layer if you're not optimizing it.
+ - in case you call Net.setidentity, you WANT to call MultNet.multini again to set the initial params of the first mult layer.
+ - you probably don't want to add noise to the mult layer if you're not optimizing it. One way of doing this is to use multwscale=0.0, multbscale=0.0.
 
 """
 
@@ -33,14 +33,16 @@ class MultNet(net.Net):
 			if n < 0:
 				raise RuntimeError("Would be fine for me, but is probably a mistake.")
 	
+		self.mwlist = mwlist
 		nmult = ni + len(mwlist)
 		net.Net.__init__(self, ni, [-nmult]+nhs, **kwargs)
 	
-		self.multini(mwlist)
+		# Yes, it makes sense to directly set the weights of the first layer, as mwlist is given at this stage.
+		self.multini()
 		
 
 	
-	def multini(self, mwlist):
+	def multini(self):
 		"""
 		Initialize the mult layer in a very custom way.
 		The first ni neurons are set to simply transport.
@@ -52,17 +54,25 @@ class MultNet(net.Net):
 		
 		"""
 		
+		logger.info("Initializing mult-layer with mwlist={}...".format(self.mwlist))
+		
+		if self.mwlist is None:
+			raise RuntimeError("Weird: multini with mwlist None")
+		
 		self.layers[0].setzero()
 		self.layers[0].setidentity(onlyn=self.ni)
 		
-		# And now the custom part
-		for (i, item) in enumerate(mwlist):
+		# And now the custom part, for the neurons which come after self.ni :
+		for (i, item) in enumerate(self.mwlist):
 			if len(item) > self.ni:
 				raise RuntimeError("One item of your mwlist has too many weights!")
 			for (inputi, weight) in enumerate(item):
 				self.layers[0].weights[self.ni+i,inputi] = weight
 			
 		
+		
+		
+	
 	def get_paramslice(self, mode=None):
 		"""
 		Returns a slice object describing the parameters that should be optimized, in the context of a given mode.
