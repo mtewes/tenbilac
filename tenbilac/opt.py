@@ -32,6 +32,16 @@ def bfgs(training, maxiter=100, gtol=1e-8, **kwargs):
 		logger.warning("Optimization output is fishy")
 
 
+def multnetbfgs(training, **kwargs):
+	"""A special version for MultNets, in development
+	"""
+	
+	# We first start by optimizing only the sum layers, leaving the mult-layer as it is:
+	training.set_paramslice(mode="sum")
+	bfgs(training, **kwargs)
+	
+	
+
 
 def brute(training, maxiter=100, gtol=1e-6, **kwargs):
 	"""Custom brute-force like optimization, for tests.
