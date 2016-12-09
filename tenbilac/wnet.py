@@ -160,7 +160,32 @@ class WNet():
 		paramlabels.extend(["netw_" + l for l in self.netw.get_paramlabels()])
 		return paramlabels
 		
+	def get_paramslice(self, mode=None):
+		"""
+		Would need to be implemented !
+		Code below is just copy an paste from an old train method.
+		
+		"""
+		raise RuntimeError("Implement me!")
+		
+		
+#		logger.info("Preparing a paramslice to mode '{}'...".format(mode))
+#		
+#		if mode == "o": # the slice selects only the params of the "ouputs"
+#			self.paramslice = slice(0, self.net.neto.nparams())
+#		elif mode == "w": # Idem but for the weights
+#			self.paramslice = slice(self.net.neto.nparams(), self.net.nparams())
+#		elif mode == None: # Empty slice, use all params
+#			self.paramslice = slice(None)
+#		else:
+#			raise ValueError("Unknown mode!")
+#		
+#		logger.info("Set paramslice to mode '{}' : {}/{} params are free to be optimized.".format(
+#			mode, len(self.params[self.paramslice]), self.net.nparams())
+#			)
+		
 
+		
 	def addnoise(self, **kwargs):
 		"""
 		Adds random noise to all parameters.
