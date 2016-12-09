@@ -1,5 +1,9 @@
 """
+
+WNet is deprecated, should be updated and tested if required.
+
 A WNet is a custom network (in fact 2 networks in parallel), that also predicts a weight for each output parameter.
+
 """
 
 import numpy as np
@@ -15,6 +19,7 @@ from . import utils
 from . import err
 from . import act
 from . import data
+
 
 class WNet():
 	"""
