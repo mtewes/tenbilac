@@ -135,26 +135,19 @@ class Training:
 		self.params = self.net.get_params_ref() # Fast connection to the network parameters
 		self.paramslice = slice(None) # By default, all params are free to be optimized
 		
-	def set_paramslice(self, mode=None):
+	def set_paramslice(self, **kwargs):
 		"""
 		The paramslice allows to specify which params you want to be optimized.
-		This is relevant for instance when training a WNet.
+		This is relevant for instance when training a MultNet or a WNet.
 		We use a slice of this. Indexing with a boolean array ("mask") would seem nicer, but fancy indexing does not preserve
 		the references. Hence using a slice is a good compromise for speed.
+		
+		The Net object knows how to get such a slice, given the kwargs and the pecularities of the Net.
 		"""
-		#self.paramslice[0:self.net.neto.nparams()] = False #= self.net.get_params_ref(mode=mode)
 		
-		if mode == "o": # the slice selects only the params of the "ouputs"
-			self.paramslice = slice(0, self.net.neto.nparams())
-		elif mode == "w": # Idem but for the weights
-			self.paramslice = slice(self.net.neto.nparams(), self.net.nparams())
-		elif mode == None: # Empty slice, use all params
-			self.paramslice = slice(None)
-		else:
-			raise ValueError("Unknown mode!")
-		
-		logger.info("Set paramslice to mode '{}' : {}/{} params are free to be optimized.".format(
-			mode, len(self.params[self.paramslice]), self.net.nparams())
+		self.paramslice = self.net.get_paramslice(**kwargs)
+		logger.info("Paramslice is set with kwargs '{}' : {}/{} params are free to be optimized.".format(
+			kwargs, len(self.params[self.paramslice]), self.net.nparams())
 			)
 		
 
