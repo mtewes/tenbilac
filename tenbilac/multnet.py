@@ -59,7 +59,7 @@ class MultNet(net.Net):
 		if self.mwlist is None:
 			raise RuntimeError("Weird: multini with mwlist None")
 		
-		self.layers[0].setzero()
+		#self.layers[0].setzero() # this will be done by setidentity.
 		self.layers[0].setidentity(onlyn=self.ni)
 		
 		# And now the custom part, for the neurons which come after self.ni :
