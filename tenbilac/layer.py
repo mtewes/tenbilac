@@ -51,17 +51,19 @@ class Layer():
 		else:
 			return "*"
 	
-	def addnoise(self, wscale=0.1, bscale=0.1, multwscale=0.1):
+	def addnoise(self, wscale=0.1, bscale=0.1, multwscale=0.1, multbscale=0.1):
 		"""
 		Adds some noise to weights and biases
 		"""
 		if self.mode == "sum":
 			self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+			self.biases += bscale * np.random.randn(self.biases.size)
 		elif self.mode == "mult":
 			self.weights += multwscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+			self.biases += multbscale * np.random.randn(self.biases.size)
 		else:
 			raise RuntimeError("Unknown mode")
-		self.biases += bscale * np.random.randn(self.biases.size)
+		
 	
 	def setzero(self):
 		"""
