@@ -88,10 +88,7 @@ class Net():
 		"""
 		A short string describing the network
 		"""
-		#return "Tenbilac with architecture {self.arch} and {nparams} params".format(self=self, nparams=self.nparams())
-		#archtxt = str(self.ni) + "|" + "|".join(["{n}/{actfct}".format(n=l.nn, actfct=l.actfct.__name__) for l in self.layers])
 		archtxt = str(self.ni) + "|" + "|".join(["{n}/{modecode}{actfct}".format(n=l.nn, modecode=l.modecode(), actfct=l.actfct.__name__) for l in self.layers])
-		#autotxt = "[{archtxt}]({nparams})".format(archtxt=archtxt, nparams=self.nparams())
 		autotxt = "[{archtxt}={nparams}]".format(archtxt=archtxt, nparams=self.nparams())
 		
 		if self.name is None:
@@ -131,15 +128,13 @@ class Net():
 		Get a single 1D numpy array containing references to all network weights and biases.
 		Note that each time you call this, you loose the "connection" to the ref from any previous calls.
 		
-		:param schema: different ways to arrange the weights and biases in the output array.
-		
+		Warning: if you modify this code, pay attention to update the paramslice-related stuff as well!
 		"""
 		
 		ref = np.empty(self.nparams())
 		ind = 0
 		
-#		if schema == 1: # First layer first, weights and biases.
-#		
+#		#First layer first, weights and biases.
 #			for l in self.layers:
 #				ref[ind:ind+(l.nn*l.ni)] = l.weights.flatten() # makes a copy
 #				ref[ind+(l.nn*l.ni):ind+l.nparams()] = l.biases.flatten() # makes a copy
@@ -147,7 +142,7 @@ class Net():
 #				l.biases = ref[ind+(l.nn*l.ni):ind+l.nparams()] # a view
 #				ind += l.nparams()
 		
-		#elif schema == 2: # Starting at the end, biases before weights
+		# Starting at the end, biases before weights
 		
 		for l in self.layers[::-1]:
 			
@@ -157,10 +152,7 @@ class Net():
 			l.weights = ref[ind+l.nn:ind+l.nparams()].reshape(l.nn, l.ni) # a view
 			ind += l.nparams()
 			
-		#else:
-		#	raise ValueError("Unknown schema")
 			
-		
 		# Note that such tricks do not work, as indexing by indices creates copies:
 		#indices = np.arange(self.nparams())
 		#np.random.shuffle(indices)
