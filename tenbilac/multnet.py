@@ -1,6 +1,12 @@
 """
 A MultNet is a variant of a Net, with a first hidden layer performing multiplications.
 This first layer needs special initialization, and is not optimized at the same pace as the second part.
+
+
+Things to keep in mind:
+ - don't setidentity, you would loose the custom initialization
+ - you probably don't want to add noise to the mult layer if you're not optimizing it.
+
 """
 
 import numpy as np
@@ -59,17 +65,27 @@ class MultNet(net.Net):
 		
 	def get_paramslice(self, mode=None):
 		"""
-		Returns a slice object describing the parameters that should be optimized.
+		Returns a slice object describing the parameters that should be optimized, in the context of a given mode.
 		
 		:param mode: If "sum", all parameters of the sum-layers are included.
 			If "mult", only the parameters of the first mult-layer are in.
 		
 		"""
 		
+		logger.info("Preparing a paramslice to mode '{}'...".format(mode))
+		
+		ntotparams = self.nparams()
+		nmultparams = self.layers[0].nparams()
+		nsumparams = ntotparams - nmultparams
+		
+		if mode == "mult":
+			# Those params, of the first layer, are the **last** in the paramslist, so we skip the first part:
+			return slice(nsumparams, ntotparams)
 		if mode == "sum":
-			
-			
-			logger.info("Set paramslice to mode '{}'".format(mode))
+			# We use only the first params:
+			return slice(0, nsumparams)
+		elif mode == None: # Empty slice, use all params
+			return slice(None)	
 		else:
 			raise ValueError("Unknown mode!")
 		
