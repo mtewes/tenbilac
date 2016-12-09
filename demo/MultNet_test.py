@@ -45,26 +45,24 @@ inputs = inputnormer(inputs)
 targetnormer = tenbilac.data.Normer(targets, type="sa1")
 targets = targetnormer(targets)
 
-print inputnormer
-print targetnormer
-
 
 dat = tenbilac.data.Traindata(inputs=inputs, targets=targets)
 
-net = tenbilac.multnet.MultNet(ni=2, mwlist=[(1, 1)], nhs=[], no=1, actfctname="iden", oactfctname="iden", multactfctname="iden", inames=["x", "y"], onames=["z"])
-print net.report()
+net = tenbilac.multnet.MultNet(ni=2, mwlist=[(1, 1)], nhs=[3], no=1, actfctname="iden", oactfctname="iden", multactfctname="iden", inames=["x", "y"], onames=["z"])
 
 training = tenbilac.train.Training(net, dat, errfctname="msb", autoplot=False, autoplotdirpath=".")
 
 
+net.setidentity()
+net.multini()
+
+# We can even add noise afterwards, as long as we keep the mult-scales at zero:
+net.addnoise(multwscale=0.0, multbscale=0.0, wscale=0.1, bscale=0.1)
+
+tenbilac.plot.netviz(training, title="Ready!")
+#print net.report()
+
 training.set_paramslice(mode="sum")
-
-net.addnoise(multwscale=1.0, multbscale=0.0, wscale=0.1, bscale=0.1)
-
-
-print net.report()
-exit()
-
 training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=20, gtol=1e-8)
 
 print net.report()
@@ -74,43 +72,46 @@ training.set_paramslice(mode="mult")
 training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=20, gtol=1e-8)
 
 print net.report()
+tenbilac.plot.netviz(training, title="Done!")
 
-
-
-exit()
-net.setidentity()
-
-# The exact solution:
-#net.layers[0].weights[0,1] = 1.0
-#net.layers[1].weights[0] = ((inputnormer.b[0]*inputnormer.b[1])/targetnormer.b[0])
-print net.report()
-
-#net.addnoise(multwscale=0.01, wscale=0.01, bscale=0.01)
-
-print net.report()
-
-training = tenbilac.train.Training(net, dat, errfctname="mse", autoplot=False, autoplotdirpath="plots")
-
-training.opt(algo="bfgs", maxiter=50, gtol=1e-8)
-
-
-print net.report()
 
 outs = targetnormer.denorm(net.predict(inputs))
 #outs = net.predict(inputs)
+# Shape is (rea, neuron, case)
 
-assert nrea==1
+assert zs.size == ncas
+residues = outs[:,0,:] - zs # We have only one neuron
+# Shape is (rea, case)
 
-zerrs = (outs[0] - np.array([zs]))[0]
-print np.mean(zerrs)
-print np.std(zerrs)
+# Stats for each case, over the realizations:
+meanres = np.mean(residues, axis=0)
+stdres = np.std(residues, axis=0)
+assert meanres.size == ncas
 
+
+#training.save("test.pkl", keepdata=True)
+#exit()
 import matplotlib.pyplot as plt
 
-plt.scatter(xs, ys, c=zerrs, s=80, marker="o", edgecolors="face")
+
+fig = plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.scatter(xs, ys, c=meanres, s=80, marker="o", edgecolors="face")
 plt.xlabel("x")
 plt.ylabel("y")
 plt.colorbar()
-plt.show()
+plt.title("Mean residue")
 
+plt.subplot(1, 2, 2)
+plt.scatter(xs, ys, c=stdres, s=80, marker="o", edgecolors="face")
+plt.xlabel("x")
+plt.ylabel("y")
+plt.colorbar()
+plt.title("Std residue")
+
+plt.tight_layout()
+
+
+plt.show()
 
