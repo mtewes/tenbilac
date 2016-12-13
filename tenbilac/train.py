@@ -246,12 +246,9 @@ class Training:
 
 
 
-	def makeplots(self, suffix="_optitXXXXX", dirpath=None):
+	def plotpath(self, plotname, suffix="_optitXXXXX", dirpath=None):
 		"""
-		Saves a bunch of default checkplots into the specified directory.
-		Can typically be called at the end of training, or after iterations.
-		`inames` and `onames` allow to give the right names to the features and output, respectively.
-		
+		Prepares a path to be used by checkplots.
 		"""
 		
 		if dirpath is None:
@@ -260,15 +257,24 @@ class Training:
 		if suffix == "_optitXXXXX":
 			suffix = "_optit{0:05d}".format(self.optit)
 		
-		logger.info("Making and writing plots, with suffix '{}'...".format(suffix))
-		plot.sumevo(self, os.path.join(dirpath, "sumevo"+suffix+".png"))
-		plot.outdistribs(self, os.path.join(dirpath, "outdistribs"+suffix+".png"))
-		plot.errorinputs(self, os.path.join(dirpath, "errorinputs"+suffix+".png"))
-
-		plot.netviz(self, filepath=os.path.join(dirpath, "netviz"+suffix+".png"))
+		return os.path.join(dirpath, plotname+suffix+".png")
 		
+
+	def makeplots(self, **kwargs):
+		"""
+		Saves a bunch of default checkplots into the specified directory.
+		Can typically be called at the end of training, or after iterations.
+		
+		kwargs are passed to plotpath.
+		"""
+		
+		logger.info("Making and writing plots...")
+		plot.sumevo(self, filepath=self.plotpath("sumevo", **kwargs))
+		plot.outdistribs(self, filepath=self.plotpath("outdistribs", **kwargs))
+		plot.errorinputs(self, filepath=self.plotpath("errorinputs", **kwargs))
+		plot.netviz(self, filepath=self.plotpath("netviz", **kwargs))	
 		if self.trackbiases:
-			plot.biasevo(self, os.path.join(dirpath, "biasevo"+suffix+".png"))
+			plot.biasevo(self, filepath=self.plotpath("biasevo", **kwargs))
 		
 		logger.info("Done with plots")
 
@@ -281,6 +287,12 @@ class Training:
 		self.testcost()
 		self.iterationstarttime = datetime.now()
 		self.optitcall = 0
+		
+		# If this is the very first start, we prepare plots to viz the initial contidions:
+		if self.optit == 0 and self.autoplot:
+			plot.netviz(self, filepath=self.plotpath("netviz"))	
+			
+			
 		
 	
 	def end(self):
