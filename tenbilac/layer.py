@@ -37,7 +37,13 @@ class Layer():
 
 		self.weights = np.zeros((self.nn, self.ni)) # first index is neuron, second is input
 		self.biases = np.zeros(self.nn) # each neuron has its bias
-			
+		
+		# We will store the last "run" of the layer in a cache:
+		self.cache_lastinputs = None
+		self.cache_lastweights = None
+		self.cache_lastbiases = None
+		self.cache_lastoutputs = None
+		
 		
 	def __str__(self):
 		return "Layer '{self.name}', mode {self.mode}, ni {self.ni}, nn {self.nn}, actfct {self.actfct.__name__}".format(self=self)
@@ -51,17 +57,19 @@ class Layer():
 		else:
 			return "*"
 	
-	def addnoise(self, wscale=0.1, bscale=0.1, multwscale=0.1):
+	def addnoise(self, wscale=0.1, bscale=0.1, multwscale=0.1, multbscale=0.1):
 		"""
 		Adds some noise to weights and biases
 		"""
 		if self.mode == "sum":
 			self.weights += wscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+			self.biases += bscale * np.random.randn(self.biases.size)
 		elif self.mode == "mult":
 			self.weights += multwscale * np.random.randn(self.weights.size).reshape(self.weights.shape)
+			self.biases += multbscale * np.random.randn(self.biases.size)
 		else:
 			raise RuntimeError("Unknown mode")
-		self.biases += bscale * np.random.randn(self.biases.size)
+		
 	
 	def setzero(self):
 		"""
@@ -143,6 +151,29 @@ class Layer():
 			output indices: (realization, neuron, case)
 			
 		"""
+		
+		
+		# Cache: if nothing has changed, no need to run... (no matter the "mode"):
+		
+		if self.cache_lastoutputs is None:
+			# We have no cache (first iteration), so nothing to do but run...
+			pass
+		else:
+			# We check if anything has changed, starting with the fast things:
+			if np.all(self.weights == self.cache_lastweights):
+				if np.all(self.biases == self.cache_lastbiases):
+					if np.all(inputs == self.cache_lastinputs):
+						# I was thinking of using np.all_close() instead of "==" here...
+						# But in fact, with the previous layers being cached as well,
+						# using "==" seems just the right thing to do, nice!
+					
+						#logger.info("BINGO for mode {} !!!".format(self.mode))
+						
+						# Nothing has changed, so we can return the cached outputs:
+						return self.cache_lastoutputs
+		
+		#logger.info("No BINGO for mode {}".format(self.mode))
+		
 		if self.mode == "sum":
 			if inputs.ndim == 1:
 				return self.actfct(np.dot(self.weights, inputs) + self.biases)
@@ -159,7 +190,11 @@ class Layer():
 				# ... gives ouput indices (neuron, realization, case)
 				# We need to change the order of those indices:
 				
-				return np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
+				self.cache_lastoutputs = np.rollaxis(self.actfct(np.dot(self.weights, inputs) + self.biases.reshape((self.nn, 1, 1))), 1)
+				self.cache_lastinputs = inputs.copy()
+				self.cache_lastweights = self.weights.copy()
+				self.cache_lastbiases = self.biases.copy()
+				return self.cache_lastoutputs
 			
 				# Note that np.ma.dot does not work for 3D arrays!
 				# We do not care about masks at all here, just compute assuming nothing is masked.
@@ -203,7 +238,11 @@ class Layer():
 			elif inputs.ndim == 3:
 				assert inputs.shape[1] == self.ni
 				signs = np.swapaxes(np.prod([[np.power(np.sign(inputs[j,:,i]), np.fabs(self.weights) > signlim) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3), 1, 2)
-				return signs * np.swapaxes(self.actfct(np.prod([[np.power(np.fabs(inputs[j,:,i]), self.weights) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3) + self.biases), 1, 2)
+				self.cache_lastoutputs = signs * np.swapaxes(self.actfct(np.prod([[np.power(np.fabs(inputs[j,:,i]), self.weights) for i in range(inputs.shape[2])] for j in range(inputs.shape[0])], axis=3) + self.biases), 1, 2)
+				self.cache_lastinputs = inputs.copy()
+				self.cache_lastweights = self.weights.copy()
+				self.cache_lastbiases = self.biases.copy()
+				return self.cache_lastoutputs
 				
 			else:
 				raise RuntimeError("Input shape error")
