@@ -540,8 +540,6 @@ def netviz(net, title="", legend=True, filepath=None):
 	:param filepath: The file path to save the data to. If `None` (default) shows the figures.
 	"""
 	
-	#net = train.net
-	
 	nmax = np.amax([net.ni, net.no, np.amax(net.nhs)]) * 1.
 	
 	fig = plt.figure()
@@ -553,17 +551,7 @@ def netviz(net, title="", legend=True, filepath=None):
 			write_mode = True
 	
 	biasm = "^"
-	"""		
-	if title == "default":
-		if write_mode:
-			title = r"$\to$".join([r"${m}^{{{n}}}\mathrm{{{actfct}}}$".format(n=l.nn, m=get_symbol(l.mode, False), actfct=l.actfct.__name__) for l in net.layers])
-			#title = r"$\Sigma^5$"
-		else:
-			title = r"$\to$".join([r"$\mathrm{{{n}/{actfct}}}$".format(n=l.nn, actfct=l.actfct.__name__) for l in net.layers])
-		title += r"$;\ \mathrm{{{}}}$".format(train.get_costfctname())
-		title += r"$;\ \mathrm{{it:{:05d}}}$".format(train.optit)
-		#title = train.title()
-	"""
+
 	plt.title(title)
 	
 	plt_kwargs = {'marker':'s', 's':35, 'c':'k', 'zorder':1}

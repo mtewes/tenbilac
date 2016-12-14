@@ -272,7 +272,6 @@ class Training:
 		plot.sumevo(self, filepath=self.plotpath("sumevo", **kwargs))
 		plot.outdistribs(self, filepath=self.plotpath("outdistribs", **kwargs))
 		plot.errorinputs(self, filepath=self.plotpath("errorinputs", **kwargs))
-		#plot.netviz(self, filepath=self.plotpath("netviz", **kwargs))
 		self.plot_netviz(**kwargs)	
 		if self.trackbiases:
 			plot.biasevo(self, filepath=self.plotpath("biasevo", **kwargs))
