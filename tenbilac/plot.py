@@ -478,7 +478,7 @@ def draw_link(ax, start, end, **kwargs):
 	patch = patches.PathPatch(path, facecolor='None', **kwargs)
 	ax.add_patch(patch)
 	
-def scale_bias(b, scale=20.):
+def scale_bias(b, scale=75.):
 	"""
 	Returns the scaled biased for the `plot.netviz` plot.
 	
@@ -510,28 +510,63 @@ def get_color(v, pos="orange", neg="navy"):
 		c = neg
 	return c
 
-def netviz(train, title="default", legend=True, filepath=None):
+def get_symbol(mode, latex=True):
+	"""
+	Returns the symbol used for displaying the layer mode
+	"""
+	if latex:
+		if mode == "sum":
+			return r"$\sum$"
+		elif mode == "mult":
+			return r"$\prod$"
+		else:
+			raise NotImplemented("mode not recognised")
+	else:
+		if mode == "sum":
+			return "\Sigma"
+		elif mode == "mult":
+			return "\Pi"
+		else:
+			raise NotImplemented("mode not recognised")
+
+
+def netviz(net, title="", legend=True, filepath=None):
 	"""
 	Draws a visualisation of the network in the style of the `Tensorflow` playground.
 	
 	:param train: the Train class for the network
-	:param title: The string to display as title, if "default" writes activation fct + err fct. Default=`default`
-	:param legend: Whether to show the legend for the tickness of the lines and points. Default=`True`
+	:param title: The string to display as title. Default=`None`
+	:param legend: Whether to show the legend for the tickness of the lines and points. Default=``
 	:param filepath: The file path to save the data to. If `None` (default) shows the figures.
 	"""
 	
-	net = train.net
+	#net = train.net
 	
 	nmax = np.amax([net.ni, net.no, np.amax(net.nhs)]) * 1.
 	
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
+	
+	write_mode = False
+	for l in net.layers:
+		if not l.mode == "sum":
+			write_mode = True
+	
+	biasm = "^"
+	"""		
 	if title == "default":
-		title = "".join([r"$\mathrm{{{n}/{actfct}\ }}$".format(n=l.nn, actfct=l.actfct.__name__) for l in net.layers])
-		title += r"$; \mathrm{{{}}}$".format(train.get_costfctname())
+		if write_mode:
+			title = r"$\to$".join([r"${m}^{{{n}}}\mathrm{{{actfct}}}$".format(n=l.nn, m=get_symbol(l.mode, False), actfct=l.actfct.__name__) for l in net.layers])
+			#title = r"$\Sigma^5$"
+		else:
+			title = r"$\to$".join([r"$\mathrm{{{n}/{actfct}}}$".format(n=l.nn, actfct=l.actfct.__name__) for l in net.layers])
+		title += r"$;\ \mathrm{{{}}}$".format(train.get_costfctname())
+		title += r"$;\ \mathrm{{it:{:05d}}}$".format(train.optit)
+		#title = train.title()
+	"""
 	plt.title(title)
 	
-	plt_kwargs = {'marker':'s', 's':40, 'c':'k', 'zorder':1}
+	plt_kwargs = {'marker':'s', 's':35, 'c':'k', 'zorder':1}
 
 	for ii, l in enumerate(net.layers):
 		dy = nmax / 2 - (l.ni * 1.) / 2
@@ -559,7 +594,10 @@ def netviz(train, title="default", legend=True, filepath=None):
 						end=[ii+1, flnis[iw]+dyf], lw=scale_weight(link), edgecolor=get_color(link), zorder=-1)
 			
 			# Draw the biases	
-			plt.scatter([ii+1.], [flnis[iw]+dyf+0.1], c=get_color(l.biases[iw]), edgecolors="None", s=scale_bias(l.biases[iw]))
+			plt.scatter([ii+1.], [flnis[iw]+dyf+0.12], c=get_color(l.biases[iw]), edgecolors="None", s=scale_bias(l.biases[iw]), marker=biasm)
+	
+		if write_mode:
+			plt.text(ii+1., flnis[0]+dyf-0.25, get_symbol(l.mode), horizontalalignment='center', size=7)
 	
 	# Draw output
 	nos = np.arange(net.no)
@@ -574,15 +612,16 @@ def netviz(train, title="default", legend=True, filepath=None):
 	if legend:
 		ws = [-1.,-0.5,0.5,1.]
 		for iw, w in enumerate(ws):
-			yy = nos[-1]+dyf + 0.75 + iw * 0.2
+			yy = nos[-1]+dyf - 1. - iw * 0.2
 			plt.annotate(r"$%1.1f$" % w, xy=(ii+0.95, yy), horizontalalignment='right', verticalalignment='center')
-			plt.scatter([ii+1], [yy], c=get_color(w), edgecolors="None", s=scale_bias(w))
+			plt.scatter([ii+1], [yy], c=get_color(w), edgecolors="None", s=scale_bias(w), marker=biasm)
 			plt.plot([ii+1.07, ii+1.47], [yy, yy], c=get_color(w), lw=scale_weight(w))
 	
 	# Taking care of a few things
 	plt.xlim([-0.23 * (len(net.nhs) + 2),ii+1.7])
 	plt.tight_layout()
 	plt.axis('off')
+	plt.gca().invert_yaxis()
 	
 	if filepath is None:
 		plt.show()	

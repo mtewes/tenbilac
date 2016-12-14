@@ -169,7 +169,7 @@ class Training:
 		"""
 		txterrfct = "{self.errfctname}".format(self=self)
 		if hasattr(self, 'regullam') and self.regullam is not None:
-			txterrfct += "+{self.regulfctname}".format(self=self)
+			txterrfct += "+{self.regullam:1.0e}x{self.regulfctname}".format(self=self)
 		return txterrfct
 	
 	
@@ -272,13 +272,31 @@ class Training:
 		plot.sumevo(self, filepath=self.plotpath("sumevo", **kwargs))
 		plot.outdistribs(self, filepath=self.plotpath("outdistribs", **kwargs))
 		plot.errorinputs(self, filepath=self.plotpath("errorinputs", **kwargs))
-		plot.netviz(self, filepath=self.plotpath("netviz", **kwargs))	
+		#plot.netviz(self, filepath=self.plotpath("netviz", **kwargs))
+		self.plot_netviz(**kwargs)	
 		if self.trackbiases:
 			plot.biasevo(self, filepath=self.plotpath("biasevo", **kwargs))
 		
 		logger.info("Done with plots")
 
-
+	def plot_netviz(self, filepath='None', **kwargs):
+		write_mode = False
+		for l in self.net.layers:
+			if not l.mode == "sum":
+				write_mode = True
+		
+		if write_mode:
+			title = r"$\to$".join([r"${m}^{{{n}}}\mathrm{{{actfct}}}$".format(n=l.nn, m=plot.get_symbol(l.mode, False), actfct=l.actfct.__name__) for l in self.net.layers])
+		else:
+			title = r"$\to$".join([r"$\mathrm{{{n}/{actfct}}}$".format(n=l.nn, actfct=l.actfct.__name__) for l in self.net.layers])
+		title += r"$;\ \mathrm{{{}}}$".format(self.get_costfctname())
+		title += r"$;\ \mathrm{{it:{:05d}}}$".format(self.optit)
+		title += r"$;\ \mathrm{{{tmin:.1f}min}}$".format(tmin=np.sum(self.optittimes)/60.0)
+		
+		if filepath is 'None':
+			filepath = self.plotpath("netviz")
+		plot.netviz(self.net, filepath=filepath, title=title, **kwargs)	
+		
 	def start(self):
 		"""
 		Called a the beginning of a training 
@@ -290,7 +308,7 @@ class Training:
 		
 		# If this is the very first start, we prepare plots to viz the initial contidions:
 		if self.optit == 0 and self.autoplot:
-			plot.netviz(self, filepath=self.plotpath("netviz"))	
+			self.plot_netviz()
 			
 			
 		
