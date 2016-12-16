@@ -203,7 +203,7 @@ class Tenbilac():
 					os.makedirs(dirpath)
 
 		
-		# And we start the training
+		# And we start the training (optimization)
 		
 		logger.info("{0}: Starting the training".format(str(self)))
 		
