@@ -77,11 +77,7 @@ class Tenbilac():
 		# For this wrapper, we only allow 3D inputs and 2D targets.
 		if (inputs.ndim) != 3 or (targets.ndim) != 2:
 			raise ValueError("This wrapper only accepts 3D inputs and 2D targets, you have {} and {}".format(inputs.shape, targets.shape))
-		
-		# Creating the workdir
-		if not os.path.isdir(self.workdir):
-			os.makedirs(self.workdir)
-		
+				
 		# Creating the normers and norming, if desired
 		if self.config.getboolean("norm", "oninputs"):
 			logger.info("{}: normalizing training inputs...".format((str(self))))
@@ -119,7 +115,7 @@ class Tenbilac():
 		
 			# We first create the network
 			if nettype == "Net":
-				newnet = net.Net(
+				netobj = net.Net(
 					ni=ni,
 					nhs=list(eval(self.config.get("net", "nhs"))),
 					no=no,
@@ -131,7 +127,7 @@ class Tenbilac():
 					name='{}-{}'.format(self.name, i)
 					)
 			elif nettype == "MultNet":
-				newnet = multnet.MultNet(
+				netobj = multnet.MultNet(
 					ni=ni,
 					nhs=list(eval(self.config.get("net", "nhs"))),
 					mwlist=list(eval(self.config.get("net", "mwlist"))),
@@ -147,65 +143,119 @@ class Tenbilac():
 				raise RuntimeError("Don't know network type '{}'".format(nettype))
 			
 			# A directory where the training can store its stuff
-			newnetdir = os.path.join(self.workdir, "{}_{:03d}".format(self.name, i))
-			newtrainingpath = os.path.join(newnetdir, "Training.pkl")
-			newplotdirpath = os.path.join(newnetdir, "plots")
+			trainobjdir = os.path.join(self.workdir, "{}_{:03d}".format(self.name, i))
+			trainobjpath = os.path.join(trainobjdir, "Training.pkl")
+			plotdirpath = os.path.join(trainobjdir, "plots")
 			
 			
 			# Now we create the Training object, with the new network and the traindata
-			newtrain = train.Training(	
-				newnet,
+			
+			if self.config.getboolean("train", "useregul"):
+				raise RuntimeError("Regul wrapper not implemented, code has to be cleaned first.")
+			
+			trainobj = train.Training(	
+				netobj,
 				self.traindata,
 				errfctname=self.config.get("train", "errfctname"),
-				regulweight=self.config.get("train", "regulweight"),
-				regulfctname=self.config.get("train", "regulfctname"),
-				itersavepath=newtrainingpath,
+				regulweight=None,
+				regulfctname=None,
+				itersavepath=trainobjpath,
 				saveeachit=self.config.getboolean("train", "saveeachit"),
-				autoplotdirpath=newplotdirpath,
+				autoplotdirpath=plotdirpath,
 				autoplot=self.config.getboolean("train", "autoplot"),
 				trackbiases=self.config.getboolean("train", "trackbiases"),
 				verbose=self.config.getboolean("train", "verbose"),
 				name='Train-{}-{}'.format(self.name, i)
 				)
 			
+			# We keep the directories at hand with this object
+			trainobj.dirstomake=[trainobjdir, plotdirpath]
 			
+			# Somewhere here we would maybe take over an existing training, if desired
+			# If we don't take over, we have to start from identity and add noise
 			
-			self.committee.append(newtrain)
+			if self.config.get("net", "startidentity"):
+				trainobj.net.setidentity(
+					onlyn=self.config.getint("net", "onlynidentity")
+					)
+				if nettype == "MultNet": # We have to call multini again!
+					trainobj.net.multini()
+					
+			trainobj.net.addnoise(
+				wscale=self.config.getfloat("net", "ininoisewscale"),
+				bscale=self.config.getfloat("net", "ininoisebscale"),
+				multwscale=self.config.getfloat("net", "ininoisemultwscale"),
+				multbscale=self.config.getfloat("net", "ininoisemultbscale")
+				)
+			
+			# We add this new Training object to the committee
+			self.committee.append(trainobj)
+			
 		assert len(self.committee) == nmembers
 		
 		
+		# Creating the directories
+		if not os.path.isdir(self.workdir):
+			os.makedirs(self.workdir)
+		for trainobj in self.committee:
+			for dirpath in trainobj.dirstomake:
+				if not os.path.isdir(dirpath):
+					os.makedirs(dirpath)
+
+		
+		# And we start the training
+		
+		logger.info("{0}: Starting the training".format(str(self)))
+		
+		for trainobj in self.committee:
+			
+			trainobj.opt(
+				algo=self.config.get("train", "algo"),
+				mbsize=None,
+				mbfrac=self.config.getfloat("train", "mbfrac"),
+				mbloops=self.config.getint("train", "mbloops"),
+				maxiter=self.config.getint("train", "maxiter"),
+				gtol=self.config.getfloat("train", "gtol"),
+				)
+		
+		
+		logger.info("{0}: done with the training".format(str(self)))
+		
+	
+
 		
 
 	def predict(self, inputs):
 		"""
-		Checks the workdir and uses each network found or specified in config to predict some output
+		Checks the workdir and uses each network found or specified in config to predict some output.
+		Does note care about the "Tenbilac" object used for the training!
 		"""
 
 
 
-	def _checktrainargs(self, inputs, targets):
-		"""
-		"""
-		assert inputs.ndim == 3
-		assert targets.ndim == 2
-		
-	
-
-	def _makenorm(self, inputs, targets):
-		"""
-		"""
-				# We normalize the inputs and labels, and save the Normers for later denormalizing.
-		
-
-
-	def _norm(self, inputs, targets):
-		"""Takes care of the norming
-		"""
-
-
-	def _summary(self):
-		
-		"""Analyses how the trainings of a committee went. Logs info and calls a checkplot.
-		"""
+# 	def _checktrainargs(self, inputs, targets):
+# 		"""
+# 		"""
+# 		assert inputs.ndim == 3
+# 		assert targets.ndim == 2
+# 		
+# 	
+# 
+# 	def _makenorm(self, inputs, targets):
+# 		"""
+# 		"""
+# 				# We normalize the inputs and labels, and save the Normers for later denormalizing.
+# 		
+# 
+# 
+# 	def _norm(self, inputs, targets):
+# 		"""Takes care of the norming
+# 		"""
+# 
+# 
+# 	def _summary(self):
+# 		
+# 		"""Analyses how the trainings of a committee went. Logs info and calls a checkplot.
+# 		"""
 
 

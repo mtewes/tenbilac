@@ -13,13 +13,9 @@ logger = logging.getLogger(__name__)
 
 (inputs, targets) = tenbilac.utils.readpickle("data.pkl")
 
-
-# And play:
+# And go:
 
 ten = tenbilac.com.Tenbilac("tenbilac.cfg")
 
 ten.train(inputs, targets)
-
-
-
 
