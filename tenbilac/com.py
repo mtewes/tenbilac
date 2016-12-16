@@ -1,19 +1,27 @@
 """
 The entry point to Tenbilac: functions defined here take care of running committees
-(i.e., ensembles of networks) and communicating with config files. Hence the name com,
+(i.e., ensembles of networks) and communicating with config files. Hence the name "com",
 for communication, committees, common.
 
-Its mission is to replace the complicated tenbilacwrapper of MegaLUT.
+Its mission is to replace the messy tenbilacwrapper of MegaLUT.
+
+Tenbilac is a class, but is NOT designed to be "kept" (in a pickle) between setup, training and predicting.
+All the info is in the config files, there are NO secret instance attributes worth of keeping.
+
 """
 
 from configparser import ConfigParser
+import os
 
 import logging
 logger = logging.getLogger(__name__)
 
 from . import train
 from . import utils
-
+from . import data
+from . import net
+from . import multnet
+from . import train
 
 
 class Tenbilac():
@@ -24,23 +32,23 @@ class Tenbilac():
 		
 		self.configpath = configpath
 		self.config = ConfigParser()
-		self._readconfig(configpath)
-		
-		
-	
-	def _readconfig(self, configpath):
-		"""
-		"""
 		logger.info("Reading in config from {}".format(configpath))
 		self.config.read(configpath)
+		
+		# For easy access, we point to a few configuration items:
+		self.name = self.config.get("setup", "name")
+		self.workdir = self.config.get("setup", "workdir")
 	
-
+	def __str__(self):
+		return "Tenbilac '{self.name}'".format(self=self)
+	
+# 	def _readconfig(self, configpath):
+# 		"""
+# 		"""
 # 	def _writeconfig(self, configpath):
 # 		"""
 # 		"""
 # 		logger.info("Writing config")
-
-
 # 	def setup(self, inputs=None, targets=None):
 # 		"""
 # 		
@@ -53,7 +61,7 @@ class Tenbilac():
 		
 		
 
-	def train(self, inputs=None, targets=None):
+	def train(self, inputs, targets, inputnames=None, targetnames=None):
 		"""
 		Make and save normers if they don't exist
 		Norm data with new or existing normers
@@ -63,8 +71,107 @@ class Tenbilac():
 		"""
 		
 		#self._preptrainargs(inputs, targets)
-		self._makenorm(inputs, targets)
+		#self._makenorm(inputs, targets)
 		#(inputs, targets) = self._norm(inputs, targets)
+		
+		# For this wrapper, we only allow 3D inputs and 2D targets.
+		if (inputs.ndim) != 3 or (targets.ndim) != 2:
+			raise ValueError("This wrapper only accepts 3D inputs and 2D targets, you have {} and {}".format(inputs.shape, targets.shape))
+		
+		# Creating the workdir
+		if not os.path.isdir(self.workdir):
+			os.makedirs(self.workdir)
+		
+		# Creating the normers and norming, if desired
+		if self.config.getboolean("norm", "oninputs"):
+			logger.info("{}: normalizing training inputs...".format((str(self))))
+			self.input_normer = data.Normer(inputs, type=self.config.get("norm", "inputtype"))
+			inputs = self.input_normer(inputs)
+		else:
+			logger.info("{}: inputs do NOT get normed.".format((str(self))))
+		
+		if self.config.getboolean("norm", "ontargets"):
+			logger.info("{}: normalizing training targets...".format((str(self))))
+			self.target_normer = data.Normer(targets, type=self.config.get("norm", "targettype"))
+			targets = self.target_normer(targets)
+		else:
+			logger.info("{}: targets do NOT get normed.".format((str(self))))
+		
+		
+		# And grouping them into a Traindata object:
+		self.traindata = data.Traindata(
+			inputs, targets, auxinputs=None,
+			valfrac=self.config.getfloat("train", "valfrac"),
+			shuffle=self.config.getboolean("train", "shuffle")
+			)
+		
+		# Setting up the network- and training-objects according to the config
+		nmembers = self.config.getint("net", "nmembers")
+		self.committee = [] # Will be a list of Training objects.
+		
+		ni = inputs.shape[1]
+		no = targets.shape[0]
+		nettype = self.config.get("net", "type")
+		
+		logger.info("{}: Building a committee of {}s with {} members...".format(str(self), nettype, nmembers))
+		
+		for i in range(nmembers):
+		
+			# We first create the network
+			if nettype == "Net":
+				newnet = net.Net(
+					ni=ni,
+					nhs=list(eval(self.config.get("net", "nhs"))),
+					no=no,
+					actfctname=self.config.get("net", "actfctname"),
+					oactfctname=self.config.get("net", "oactfctname"),
+					multactfctname=self.config.get("net", "multactfctname"),
+					inames=inputnames,
+					onames=targetnames,
+					name='{}-{}'.format(self.name, i)
+					)
+			elif nettype == "MultNet":
+				newnet = multnet.MultNet(
+					ni=ni,
+					nhs=list(eval(self.config.get("net", "nhs"))),
+					mwlist=list(eval(self.config.get("net", "mwlist"))),
+					no=no,
+					actfctname=self.config.get("net", "actfctname"),
+					oactfctname=self.config.get("net", "oactfctname"),
+					multactfctname=self.config.get("net", "multactfctname"),
+					inames=inputnames,
+					onames=targetnames,
+					name='{}-{}'.format(self.name, i)
+					)
+			else:
+				raise RuntimeError("Don't know network type '{}'".format(nettype))
+			
+			
+			
+		
+			# Now create the Training object 
+			
+			newtrain = train.Training(	
+				newnet,
+				self.traindata,
+				errfctname=self.config.get("train", "errfctname"),
+				regulweight=self.config.get("train", "regulweight"),
+				regulfctname=self.config.get("train", "regulfctname"),
+				itersavepath=None,
+				saveeachit=self.config.getboolean("train", "saveeachit"),
+				autoplotdirpath=".",
+				autoplot=self.config.getboolean("train", "autoplot"),
+				trackbiases=self.config.getboolean("train", "trackbiases"),
+				verbose=self.config.getboolean("train", "verbose"),
+				name=None
+				)
+			
+			
+			
+			self.committee.append(newtrain)
+		assert len(self.committee) == nmembers
+		
+		
 		
 
 	def predict(self, inputs):
@@ -86,19 +193,7 @@ class Tenbilac():
 		"""
 		"""
 				# We normalize the inputs and labels, and save the Normers for later denormalizing.
-		logger.info("{0}: normalizing training inputs...".format((str(self))))
-		self.input_normer = tenbilac.data.Normer(inputs, type=self.params.normtype)
-		norminputs = self.input_normer(inputs)
 		
-		if self.params.normtargets:
-			logger.info("{0}: normalizing training targets...".format((str(self))))
-			self.target_normer = tenbilac.data.Normer(targets, type=self.params.normtype)
-			normtargets = self.target_normer(targets)
-		else:
-			logger.info("{0}: I do NOT normalize targets...".format((str(self))))
-			self.target_normer = None
-			normtargets = targets	
-
 
 
 	def _norm(self, inputs, targets):
