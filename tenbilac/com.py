@@ -209,13 +209,18 @@ class Tenbilac():
 		
 		for trainobj in self.committee:
 			
+			# Get potential custom parameters for the also specified in the config
+			algo = self.config.get("train", "algo")
+			# Now we get this section as a dict, and "map" eval() on this dict
+			algoconfigdict = {k: eval(v) for (k, v) in self.config.items("algo_" + algo)}
+			
+			
 			trainobj.opt(
 				algo=self.config.get("train", "algo"),
 				mbsize=None,
 				mbfrac=self.config.getfloat("train", "mbfrac"),
 				mbloops=self.config.getint("train", "mbloops"),
-				maxiter=self.config.getint("train", "maxiter"),
-				gtol=self.config.getfloat("train", "gtol"),
+				**algoconfigdict
 				)
 		
 		
