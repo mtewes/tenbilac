@@ -10,7 +10,7 @@ All the info is in the config files, there are NO secret instance attributes wor
 
 """
 
-from configparser import ConfigParser
+from configparser import SafeConfigParser
 import os
 
 import logging
@@ -31,7 +31,7 @@ class Tenbilac():
 		"""
 		
 		self.configpath = configpath
-		self.config = ConfigParser()
+		self.config = SafeConfigParser(allow_no_value=True)
 		logger.info("Reading in config from {}".format(configpath))
 		self.config.read(configpath)
 		
@@ -141,29 +141,31 @@ class Tenbilac():
 					multactfctname=self.config.get("net", "multactfctname"),
 					inames=inputnames,
 					onames=targetnames,
-					name='{}-{}'.format(self.name, i)
+					name='{}-{}-{}'.format(nettype, self.name, i)
 					)
 			else:
 				raise RuntimeError("Don't know network type '{}'".format(nettype))
 			
+			# A directory where the training can store its stuff
+			newnetdir = os.path.join(self.workdir, "{}_{:03d}".format(self.name, i))
+			newtrainingpath = os.path.join(newnetdir, "Training.pkl")
+			newplotdirpath = os.path.join(newnetdir, "plots")
 			
 			
-		
-			# Now create the Training object 
-			
+			# Now we create the Training object, with the new network and the traindata
 			newtrain = train.Training(	
 				newnet,
 				self.traindata,
 				errfctname=self.config.get("train", "errfctname"),
 				regulweight=self.config.get("train", "regulweight"),
 				regulfctname=self.config.get("train", "regulfctname"),
-				itersavepath=None,
+				itersavepath=newtrainingpath,
 				saveeachit=self.config.getboolean("train", "saveeachit"),
-				autoplotdirpath=".",
+				autoplotdirpath=newplotdirpath,
 				autoplot=self.config.getboolean("train", "autoplot"),
 				trackbiases=self.config.getboolean("train", "trackbiases"),
 				verbose=self.config.getboolean("train", "verbose"),
-				name=None
+				name='Train-{}-{}'.format(self.name, i)
 				)
 			
 			

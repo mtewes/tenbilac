@@ -107,9 +107,11 @@ class Training:
 		
 		# And let's test this out before we start, so that it fails fast in case of a problem.
 		# But we only do so if the file does not yet exist, to avoid overwriting an existing training.
-		if self.itersavepath is not None:
-			if not os.path.exists(self.itersavepath):
-				self.save(self.itersavepath)
+		# While this idea was OK for debugging, it's just weird to save anything to disk at this stage, so let's remove it.
+		# This should be checked when starting the training.
+		#if self.itersavepath is not None:
+		#	if not os.path.exists(self.itersavepath):
+		#		self.save(self.itersavepath)
 	
 	
 	def set_dat(self, dat):
