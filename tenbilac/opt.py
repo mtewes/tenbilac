@@ -32,15 +32,21 @@ def bfgs(training, maxiter=100, gtol=1e-8, **kwargs):
 		logger.warning("Optimization output is fishy")
 
 
-def multnetbfgs(training, **kwargs):
+def multnetbfgs(training, nepochs=20, maxiter_sum=100, maxiter_mult=50, gtol=1e-8, **kwargs):
 	"""A special version for MultNets, in development
 	"""
 	
 	# We first start by optimizing only the sum layers, leaving the mult-layer as it is:
-	training.set_paramslice(mode="sum")
-	bfgs(training, **kwargs)
+	for epoch in range(nepochs):
+		logger.info("Epoch {}/{} starting".format(epoch, nepochs))
+		
+		training.set_paramslice(mode="sum")
+		training.opt(algo="bfgs", maxiter=maxiter_sum, gtol=gtol)
+		logger.info("Sum layers done.")
 	
-	
+		training.set_paramslice(mode="mult")
+		training.opt(algo="bfgs", maxiter=maxiter_mult, gtol=gtol)
+		logger.info("Mult layers done.")
 
 
 def brute(training, maxiter=100, gtol=1e-6, **kwargs):

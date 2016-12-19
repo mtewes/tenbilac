@@ -48,9 +48,9 @@ targets = targetnormer(targets)
 
 dat = tenbilac.data.Traindata(inputs=inputs, targets=targets)
 
-net = tenbilac.multnet.MultNet(ni=2, mwlist=[(1, 1)], nhs=[3], no=1, actfctname="iden", oactfctname="iden", multactfctname="iden", inames=["x", "y"], onames=["z"])
+net = tenbilac.multnet.MultNet(ni=2, mwlist=[(1, 1)], nhs=[3], no=1, actfctname="tanh", oactfctname="iden", multactfctname="iden", inames=["x", "y"], onames=["z"])
 
-training = tenbilac.train.Training(net, dat, errfctname="msb", autoplot=False, autoplotdirpath=".")
+training = tenbilac.train.Training(net, dat, errfctname="msb", autoplot=True, autoplotdirpath="test_opt")
 
 
 net.setidentity()
@@ -60,18 +60,11 @@ net.multini()
 net.addnoise(multwscale=0.0, multbscale=0.0, wscale=0.1, bscale=0.1)
 
 tenbilac.plot.netviz(net, title="Ready!")
-#print net.report()
 
-training.set_paramslice(mode="sum")
-training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=20, gtol=1e-8)
+training.opt(algo="multnetbfgs")#, mbsize=None, mbfrac=1.0, mbloops=1, maxiter=20, gtol=1e-8)
 
 print net.report()
 
-training.set_paramslice(mode="mult")
-
-training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=1, maxiter=20, gtol=1e-8)
-
-print net.report()
 tenbilac.plot.netviz(net, title="Done!")
 
 
