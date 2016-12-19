@@ -26,7 +26,7 @@ def bfgs(training, maxiter=100, gtol=1e-8, **kwargs):
 		
 	if len(optres) == 7:
 		(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag) = optres
-		training.cost(xopt) # Is it important to do this, to set the optimal parameters? It seems not.
+		training.cost(xopt) # To set the optimal parameters (even if this might not be needed, we don't want to depend on scipy internals...)
 		logger.info("Done with optimization, {0} func_calls and {1} grad_calls".format(func_calls, grad_calls))
 	else:
 		logger.warning("Optimization output is fishy")

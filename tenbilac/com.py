@@ -13,6 +13,7 @@ All the info is in the config files, there are NO secret instance attributes wor
 from ConfigParser import SafeConfigParser
 import multiprocessing
 import os
+import glob
 import datetime
 
 import logging
@@ -267,8 +268,50 @@ class Tenbilac():
 			
 		
 		logger.info("{}: done with the training".format(str(self)))
+	
+	
+	
+	def _readmembers(self):
+		"""
+		A method that finds available committee members by itself, exploring the file system, and reads them in.
+		"""	
+		
+		trainpaths = sorted(glob.glob(os.path.join(self.workdir, "*/Training.pkl")))
+		logger.info("Reading in {} committee members...".format(len(trainpaths)))
+		self.committee = [utils.readpickle(trainpath) for trainpath in trainpaths]
+		
 		
 	
+	def summary(self):
+		"""
+		
+		"""
+		self._readmembers()
+		for trainobj in self.committee:
+			nit = trainobj.optit
+			assert nit == len(trainobj.optiterrs_train)
+			assert nit == len(trainobj.optiterrs_val)
+			trainerr = trainobj.optiterrs_train[-1]
+			valerr = trainobj.optiterrs_val[-1]
+			valerrratio = valerr / trainerr
+			logger.info("{:>20}: {:5d} iterations, train = {:.6e}, val = {:.6e} ({:4.1f})".format(trainobj.name, nit, trainerr, valerr, valerrratio))
+	
+	
+		#self.optit = 0 # The iteration counter
+#		self.optcall = 0 # The cost function call counter
+#		self.optitcall = 0 # Idem, but gets reset at each new iteration
+#		self.opterr = np.inf # The current cost function value on the training set
+#		
+#		# And some lists describing the optimization:
+#		self.opterrs = [] # The cost function value on the training set at each (!) call
+#		
+#		self.optitparams = [] # A copy of the network parameters at each iteration
+#		self.optiterrs_train = [] # The cost function value on the training set at each iteration
+#		self.optiterrs_val = [] # The cost function value on the validation set at each iteration
+#
+#		self.optitcalls = [] # The cost function call counter at each iteration
+#		self.optittimes = [] # Time taken for iteration, in seconds
+#		self.optbatchchangeits = [] # Iteration counter (in fact indices) when the batche gets changed
 
 	def predict(self, inputs):
 		"""
