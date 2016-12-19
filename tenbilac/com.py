@@ -10,7 +10,7 @@ All the info is in the config files, there are NO secret instance attributes wor
 
 """
 
-from configparser import SafeConfigParser
+from ConfigParser import SafeConfigParser
 import multiprocessing
 import os
 
