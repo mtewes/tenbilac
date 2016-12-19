@@ -13,6 +13,7 @@ All the info is in the config files, there are NO secret instance attributes wor
 from ConfigParser import SafeConfigParser
 import multiprocessing
 import os
+import datetime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -23,6 +24,8 @@ from . import data
 from . import net
 from . import multnet
 from . import train
+from . import opt
+from . import parmap
 
 
 class Tenbilac():
@@ -253,11 +256,14 @@ class Tenbilac():
 			map(_trainworker, self.committee)
 
 		else:
-			# multiprocessing map:
-			pool = multiprocessing.Pool(processes=ncpu)
-			pool.map(_trainworker, self.committee)
-			pool.close()
-			pool.join()
+			# multiprocessing map: # Does not work
+			#pool = multiprocessing.Pool(processes=ncpu)
+			#pool.map(_trainworker, self.committee)
+			#pool.close()
+			#pool.join()
+			
+			parmap.parmap(_trainworker, self.committee, ncpu)
+			
 			
 		
 		logger.info("{}: done with the training".format(str(self)))
@@ -275,11 +281,14 @@ def _trainworker(trainobj):
 	"""
 	Function that is mapped to a list of Training objects to perform the actual training on several CPUs.
 	"""
+	starttime = datetime.datetime.now()
 	p = multiprocessing.current_process()
 	logger.info("{} is starting to train with PID {} and kwargs {}".format(p.name, p.pid, trainobj._trainkwargdict))
 	trainobj.opt(**trainobj._trainkwargdict)
+	endtime = datetime.datetime.now()
+	logger.info("{} is done, it took {}".format(p.name, str(endtime - starttime)))
 	
-		
+	
 
 
 

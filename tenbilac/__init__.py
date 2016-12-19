@@ -17,3 +17,4 @@ from . import train
 from . import plot
 from . import committee
 from . import opt
+from . import parmap
