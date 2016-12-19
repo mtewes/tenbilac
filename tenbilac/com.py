@@ -11,6 +11,7 @@ All the info is in the config files, there are NO secret instance attributes wor
 """
 
 from configparser import SafeConfigParser
+import multiprocessing
 import os
 
 import logging
@@ -68,6 +69,14 @@ class Tenbilac():
 		Prepares training objects. If some exist, takesover their states
 		Runs all thoses trainings with multiprocessing
 		Analyses and compares the results obtained by the different members
+		
+		
+		About multiprocessing: 
+		One could split this task as early as possible and do all the construction of the Training and Net objects already in a pool.
+		However, this is very fast, and so for ease of debugging we keep this in normal loop.
+		Also, we avoid duplicating the input data, which might be MASSIVE. We also avoid writing this input data to disk, and having
+		the independent processes reading it again.
+		
 		"""
 		
 		#self._preptrainargs(inputs, targets)
@@ -203,38 +212,74 @@ class Tenbilac():
 					os.makedirs(dirpath)
 
 		
-		# And we start the training (optimization)
 		
-		logger.info("{0}: Starting the training".format(str(self)))
+		# Preparing the training configuration. So far, we train the committee with identical params.
+		# In future, we could do this differently.
 		
+		# Get the name of the algorithm to use:
+		algo = self.config.get("train", "algo")
+		# Now we get the associated section as a dict, and "map" eval() on this dict to get ints as ints, floats as floats, bools as bools...
+		trainkwargdict = {k: eval(v) for (k, v) in self.config.items("algo_" + algo)}
+		
+		
+		# We add some further training parameters to this dict:
+		trainkwargdict["algo"] = algo
+		trainkwargdict["mbsize"] = None
+		trainkwargdict["mbfrac"] = self.config.getfloat("train", "mbfrac")
+		trainkwargdict["mbloops"] = self.config.getint("train", "mbloops")
+		
+		
+		# And attach this dict to the committee members, to keep the map() very simple.
 		for trainobj in self.committee:
-			
-			# Get potential custom parameters for the also specified in the config
-			algo = self.config.get("train", "algo")
-			# Now we get this section as a dict, and "map" eval() on this dict
-			algoconfigdict = {k: eval(v) for (k, v) in self.config.items("algo_" + algo)}
-			
-			
-			trainobj.opt(
-				algo=self.config.get("train", "algo"),
-				mbsize=None,
-				mbfrac=self.config.getfloat("train", "mbfrac"),
-				mbloops=self.config.getint("train", "mbloops"),
-				**algoconfigdict
-				)
+			trainobj._trainkwargdict = trainkwargdict
 		
 		
-		logger.info("{0}: done with the training".format(str(self)))
+		# We are ready to start the training (optimization)
+		
+		ncpu = self.config.getint("train", "ncpu")
+		
+		if ncpu == 0:
+			try:
+				ncpu = multiprocessing.cpu_count()
+			except:
+				logger.warning("multiprocessing.cpu_count() is not implemented!")
+				ncpu = 1
+			
+		logger.info("{}: Starting the training on {} CPUs".format(str(self), ncpu))
+		
+		if ncpu == 1:
+			# The single-processing version (not using multiprocessing to keep it easier to debug):
+			logger.debug("Not using multiprocessing")
+			map(_trainworker, self.committee)
+
+		else:
+			# multiprocessing map:
+			pool = multiprocessing.Pool(processes=ncpu)
+			pool.map(_trainworker, self.committee)
+			pool.close()
+			pool.join()
+			
+		
+		logger.info("{}: done with the training".format(str(self)))
 		
 	
-
-		
 
 	def predict(self, inputs):
 		"""
 		Checks the workdir and uses each network found or specified in config to predict some output.
 		Does note care about the "Tenbilac" object used for the training!
 		"""
+
+
+def _trainworker(trainobj):
+	"""
+	Function that is mapped to a list of Training objects to perform the actual training on several CPUs.
+	"""
+	p = multiprocessing.current_process()
+	logger.info("{} is starting to train with PID {} and kwargs {}".format(p.name, p.pid, trainobj._trainkwargdict))
+	trainobj.opt(**trainobj._trainkwargdict)
+	
+		
 
 
 
