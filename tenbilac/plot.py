@@ -619,6 +619,67 @@ def netviz(net, title="", legend=True, filepath=None):
 	plt.close() # Important, otherwise it's still around for the next plt.show()
 
 
+
+
+def summaryerrevo(committee, filepath=None):
+	"""
+	First take at plotting the error curves of committee members, to compare their performances.
+	
+	:param committee: a list of Training objects
+	"""
+
+	fig = plt.figure(figsize=(14, 10))
+	ax = plt.subplot(1, 1, 1)
+	
+	# We sort the committee:
+	committee = sorted(committee, key=lambda trainobj: trainobj.optiterrs_train[-1], reverse=True)
+	
+	logger.info("Preparing summary plot with {} members...".format(len(committee)))
+	coloriter=iter(plt.cm.jet(np.linspace(0,1,len(committee))))
+		
+	for trainobj in committee:
+
+		# Preparint the data:
+		optiterrs_train = np.array(trainobj.optiterrs_train)
+		optiterrs_val = np.array(trainobj.optiterrs_val)
+		optits = np.arange(len(trainobj.optitparams))
+		optbatchchangeits = getattr(trainobj, "optbatchchangeits", [])
+		
+		trainerr = trainobj.optiterrs_train[-1]
+		valerr = trainobj.optiterrs_val[-1]
+		valerrratio = valerr / trainerr
+		
+		color = next(coloriter)
+		ax.plot(optits, optiterrs_train, ls="-", color=color, label="'{}': {:.2e} ({:.1f})".format(
+			trainobj.name, trainerr, valerrratio))
+		ax.plot(optits, optiterrs_val, ls="--", color=color) # No label for the validation
+
+		
+	ax.set_yscale('log')
+	ax.set_xlabel("Iteration")
+	#ax.set_xlim((optits[0], optits[-1]))
+	ax.set_ylabel("Cost function value")
+	ax.legend()
+	#ax.set_title(train.title())
+
+
+	plt.tight_layout()
+	if filepath is None:
+		plt.show()	
+	else:
+		logger.info("Writing summaryerrevo to {}".format(filepath))
+		plt.savefig(filepath)
+	plt.close() # Important, otherwise it's still around for the next plt.show()
+
+
+
+
+
+
+
+
+
+
 #def checkdata(data, filepath=None):
 #	"""
 #	Simply plots histograms of the different features
