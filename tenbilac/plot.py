@@ -135,11 +135,11 @@ def paramsevo(ax, train, wnetpart=None):
 	if multmode:
 		red_patch = matplotlib.patches.Patch(color='blue', label='$\Sigma$ Hidden layers')
 		green_patch = matplotlib.patches.Patch(color='green', label='$\Pi$ Hidden layers')
-		handles += red_patch
+		handles += [red_patch]
 		handles += [green_patch]
 	else:
 		red_patch = matplotlib.patches.Patch(color='blue', label='Hidden layers')
-		handles += red_patch
+		handles += [red_patch]
 
 	ax.legend(handles=handles)
 
