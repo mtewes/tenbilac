@@ -15,6 +15,7 @@ import multiprocessing
 import os
 import glob
 import datetime
+import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
@@ -47,47 +48,25 @@ class Tenbilac():
 	
 	def __str__(self):
 		return "Tenbilac '{self.name}'".format(self=self)
-	
-# 	def _readconfig(self, configpath):
-# 		"""
-# 		"""
-# 	def _writeconfig(self, configpath):
-# 		"""
-# 		"""
-# 		logger.info("Writing config")
-# 	def setup(self, inputs=None, targets=None):
-# 		"""
-# 		
-# 		"""
-# 		logger.info("Setting up Tenbilac {}".format(self.config.get("setup", "name")))
-# 
-# 
-# 		#mwlist = eval(self.config.get("setup", "mwlist"))
-# 		#print mwlist
-		
-		
+			
 
 	def train(self, inputs, targets, inputnames=None, targetnames=None):
 		"""
-		Make and save normers if they don't exist
-		Norm data with new or existing normers
-		Prepares training objects. If some exist, takesover their states
+		Make and save normers
+		Norm data with new normers
+		Prepares training objects. TODO: If some exist, takesover their states
 		Runs all thoses trainings with multiprocessing
 		Analyses and compares the results obtained by the different members
 		
 		
 		About multiprocessing: 
 		One could split this task as early as possible and do all the construction of the Training and Net objects already in a pool.
-		However, this is very fast, and so for ease of debugging we keep this in normal loop.
+		However, this preparation is very fast, and so for ease of debugging we keep this in normal loop.
 		Also, we avoid duplicating the input data, which might be MASSIVE. We also avoid writing this input data to disk, and having
 		the independent processes reading it again.
 		
 		"""
-		
-		#self._preptrainargs(inputs, targets)
-		#self._makenorm(inputs, targets)
-		#(inputs, targets) = self._norm(inputs, targets)
-		
+				
 		# For this wrapper, we only allow 3D inputs and 2D targets.
 		if (inputs.ndim) != 3 or (targets.ndim) != 2:
 			raise ValueError("This wrapper only accepts 3D inputs and 2D targets, you have {} and {}".format(inputs.shape, targets.shape))
@@ -216,8 +195,12 @@ class Tenbilac():
 				if not os.path.isdir(dirpath):
 					os.makedirs(dirpath)
 
-		
-		
+		# Saving the normers, now that we have the directories
+		if self.config.getboolean("norm", "oninputs"):
+			utils.writepickle(self.input_normer, os.path.join(self.workdir, "input_normer.pkl"))
+		if self.config.getboolean("norm", "ontargets"):
+			utils.writepickle(self.target_normer, os.path.join(self.workdir, "target_normer.pkl"))
+	
 		# Preparing the training configuration. So far, we train the committee with identical params.
 		# In future, we could do this differently.
 		
@@ -265,8 +248,6 @@ class Tenbilac():
 			#pool.join()
 			
 			parmap.parmap(_trainworker, self.committee, ncpu)
-			
-			
 		
 		logger.info("{}: done with the training".format(str(self)))
 		# We close with a summary of the results
@@ -279,7 +260,7 @@ class Tenbilac():
 		"""	
 		
 		trainpaths = sorted(glob.glob(os.path.join(self.workdir, "*/Training.pkl")))
-		logger.info("Reading in {} committee members...".format(len(trainpaths)))
+		logger.info("Found {} committee members to read in...".format(len(trainpaths)))
 		self.committee = [utils.readpickle(trainpath) for trainpath in trainpaths]
 		
 		
@@ -315,6 +296,53 @@ class Tenbilac():
 		Checks the workdir and uses each network found or specified in config to predict some output.
 		Does note care about the "Tenbilac" object used for the training!
 		"""
+		
+		self._readmembers()
+		
+		
+		# Here comes code to select members
+		
+		
+		# We norm the inputs
+		if self.config.getboolean("norm", "oninputs"):
+			logger.info("{}: normalizing inputs...".format(str(self)))
+			input_normer = utils.readpickle(os.path.join(self.workdir, "input_normer.pkl"))
+			inputs = input_normer(inputs)
+			
+		else:
+			logger.info("{}: inputs do NOT get normed.".format(str(self)))
+		
+		# Run the predictions by all the committee members
+		logger.info("{}: Making predictions with {} members...".format(str(self), len(self.committee)))
+		predslist = [trainobj.net.predict(inputs) for trainobj in self.committee]
+		
+		# We might have to denorm the predictions:
+		if self.config.getboolean("norm", "ontargets"):
+			logger.info("{}: denormalizing predictions...".format(str(self)))
+			target_normer = utils.readpickle(os.path.join(self.workdir, "target_normer.pkl"))
+			predslist = [target_normer.denorm(preds) for preds in predslist]
+		else:
+			logger.info("{}: predictions do NOT get denormed.".format(str(self)))
+		
+		# And average the results
+		logger.info("{}: Building predictions array...".format(str(self)))
+		predsarray = np.array(predslist)
+		assert predsarray.shape[0] == len(self.committee)
+		
+		
+		
+		
+		combine = self.config.get("predict", "combine")
+		if combine == "mean":
+			retarray = np.mean(predsarray, axis=0)
+		elif combine == "median":
+			retarray = np.median(predsarray, axis=0)
+		else:
+			raise ValueError("Unknown combine")
+		
+		logger.info("{}: Done with averaging.".format(str(self)))
+		return retarray
+		
 
 
 def _trainworker(trainobj):
@@ -329,32 +357,4 @@ def _trainworker(trainobj):
 	logger.info("{} is done, it took {}".format(p.name, str(endtime - starttime)))
 	
 	
-
-
-
-# 	def _checktrainargs(self, inputs, targets):
-# 		"""
-# 		"""
-# 		assert inputs.ndim == 3
-# 		assert targets.ndim == 2
-# 		
-# 	
-# 
-# 	def _makenorm(self, inputs, targets):
-# 		"""
-# 		"""
-# 				# We normalize the inputs and labels, and save the Normers for later denormalizing.
-# 		
-# 
-# 
-# 	def _norm(self, inputs, targets):
-# 		"""Takes care of the norming
-# 		"""
-# 
-# 
-# 	def _summary(self):
-# 		
-# 		"""Analyses how the trainings of a committee went. Logs info and calls a checkplot.
-# 		"""
-
 
