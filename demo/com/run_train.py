@@ -17,6 +17,6 @@ logger = logging.getLogger(__name__)
 
 ten = tenbilac.com.Tenbilac("tenbilac.cfg")
 
-#ten.train(inputs, targets)
+ten.train(inputs, targets)
 
-ten.predict(inputs)
+#ten.predict(inputs)

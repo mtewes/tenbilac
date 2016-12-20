@@ -135,11 +135,20 @@ class Tenbilac():
 			else:
 				raise RuntimeError("Don't know network type '{}'".format(nettype))
 			
+			
 			# A directory where the training can store its stuff
 			trainobjdir = os.path.join(self.workdir, "{}_{:03d}".format(self.name, i))
 			trainobjpath = os.path.join(trainobjdir, "Training.pkl")
 			plotdirpath = os.path.join(trainobjdir, "plots")
 			
+			
+			# Let's see if an existing training is available in these directories:
+			oldtrainobj = None
+			if self.config.getboolean("train", "takeover") and os.path.exists(trainobjpath):
+				# Then we read the existing training (before the new training has any chance to write files...)
+				# (The acutal takeover will happen later).
+				logger.info("Reading in existing training... ")
+				oldtrainobj = utils.readpickle(trainobjpath)
 			
 			# Now we create the Training object, with the new network and the traindata
 			
@@ -164,22 +173,30 @@ class Tenbilac():
 			# We keep the directories at hand with this object
 			trainobj.dirstomake=[trainobjdir, plotdirpath]
 			
-			# Somewhere here we would maybe take over an existing training, if desired
+			# If desired, we take over a previous training.
 			# If we don't take over, we have to start from identity and add noise
 			
-			if self.config.get("net", "startidentity"):
-				trainobj.net.setidentity(
-					onlyn=self.config.getint("net", "onlynidentity")
-					)
-				if nettype == "MultNet": # We have to call multini again!
-					trainobj.net.multini()
+			if oldtrainobj is None:
+			
+				if self.config.get("net", "startidentity"):
+					trainobj.net.setidentity(
+						onlyn=self.config.getint("net", "onlynidentity")
+						)
+					if nettype == "MultNet": # We have to call multini again!
+						trainobj.net.multini()
 					
-			trainobj.net.addnoise(
-				wscale=self.config.getfloat("net", "ininoisewscale"),
-				bscale=self.config.getfloat("net", "ininoisebscale"),
-				multwscale=self.config.getfloat("net", "ininoisemultwscale"),
-				multbscale=self.config.getfloat("net", "ininoisemultbscale")
-				)
+				trainobj.net.addnoise(
+					wscale=self.config.getfloat("net", "ininoisewscale"),
+					bscale=self.config.getfloat("net", "ininoisebscale"),
+					multwscale=self.config.getfloat("net", "ininoisemultwscale"),
+					multbscale=self.config.getfloat("net", "ininoisemultbscale")
+					)
+			
+			else: # We do take over
+				logger.info("Taking over an existing training...")
+				trainobj.takeover(oldtrainobj)
+
+				
 			
 			# We add this new Training object to the committee
 			self.committee.append(trainobj)
