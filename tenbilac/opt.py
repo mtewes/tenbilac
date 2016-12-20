@@ -32,7 +32,7 @@ def bfgs(training, maxiter=100, gtol=1e-8, **kwargs):
 		logger.warning("Optimization output is fishy")
 
 
-def multnetbfgs(training, nepochs=10, maxiter_sum=100, maxiter_mult=20, gtol=1e-8, **kwargs):
+def multnetbfgs(training, nepochs=10, maxiter_sum=200, maxiter_mult=200, gtol=1e-8, **kwargs):
 	"""A special version for MultNets, in development
 	"""
 	
