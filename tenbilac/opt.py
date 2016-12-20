@@ -45,13 +45,11 @@ def multnetbfgs(training, nepochs=10, maxiter_sum=200, maxiter_mult=200, gtol=1e
 		logger.info("Epoch {}/{} starting".format(epoch, nepochs))
 		
 		training.set_paramslice(mode="sum")
-		#training.start()
 		bfgs(training, maxiter=maxiter_sum, gtol=gtol, **kwargs)
 		training.end()
 		logger.info("Optimisation sum layers done.")
 	
 		training.set_paramslice(mode="mult")
-		training.start()
 		bfgs(training, maxiter=maxiter_mult, gtol=gtol, **kwargs)
 		training.end()
 		logger.info("Optimisation mult layers done.")
