@@ -87,13 +87,13 @@ class Layer():
 		Sets the weights and biases so that this layer transports all its first nn inputs to the nn outputs.
 		This is meant to give a promising initial condition for training a calibration-like task. 
 		
-		:param onlyn: If set, limits the number of neurons to be set. By default, all are set.
+		:param onlyn: If set and positive, limits the number of neurons to be set. Otherwise, all are set.
 		:type onlyn: int
 		"""
 		self.setzero()
 		
 		npossible = min(self.ni, self.nn) # Can't transport more inputs
-		if onlyn is None:
+		if onlyn is None or onlyn < 0:
 			ngofor = npossible
 		else:
 			if onlyn > npossible:

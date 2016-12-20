@@ -58,8 +58,8 @@ class Committee():
 	
 	def __init__(self, members, name=None):
 		"""
-		:param members: Tenbilac instances
-		:type members: tuple of net or wnet
+		:param members: Net or MultNet etc instances
+		:type members: tuple or list
 		
 		:param name: if None, will be set automatically
 		:type name: string
@@ -98,7 +98,8 @@ class Committee():
 
 class CommTraining():
 	"""
-	This is an implicit decorator of the training class to handle the training of committees
+	This is an implicit decorator (??? wrapper -- or could you point to a tuto. I thought that decorators are functions returning functions)
+	of the training class to handle the training of committees
 	"""
 	
 	def __init__(self, committee, multiple_trainings=False, **kwargs):
@@ -143,6 +144,10 @@ class CommTraining():
 		
 		.. warning:: There is a known issue there. You should not run on multiple core except when training
 			otherwise the callback function in training is not called.
+			Could you elaborate:
+			- why do I care that the callback function in training is not called, it I'm not training ?
+			- is there any dangerous stuff left, for which the code would not raise an exception or something ?
+			
 		"""
 
 		params = [[memi, method, attr, kwargs] for memi in self.trainings]
@@ -185,6 +190,8 @@ class CommTraining():
 			
 			for ii in range(len(self.trainings)):
 				self.trainings[ii].dat = tmptraindata[ii]
+						
+				
 
 def _worker(params):
 	training, method, attr, kwargs = params
@@ -196,3 +203,6 @@ def _worker(params):
 	output = eval(cmd_line)
 
 	return training, output
+
+
+
