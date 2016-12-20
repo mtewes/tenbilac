@@ -27,6 +27,7 @@ from . import multnet
 from . import train
 from . import opt
 from . import parmap
+from . import plot
 
 
 class Tenbilac():
@@ -268,7 +269,8 @@ class Tenbilac():
 			
 		
 		logger.info("{}: done with the training".format(str(self)))
-	
+		# We close with a summary of the results
+		self.summary()
 	
 	
 	def _readmembers(self):
@@ -284,9 +286,11 @@ class Tenbilac():
 	
 	def summary(self):
 		"""
-		
+		Summarizes the training performance of committee members.
 		"""
 		self._readmembers()
+		
+		# First we just write some log info, to demonstrate the idea:
 		for trainobj in self.committee:
 			nit = trainobj.optit
 			assert nit == len(trainobj.optiterrs_train)
@@ -296,22 +300,15 @@ class Tenbilac():
 			valerrratio = valerr / trainerr
 			logger.info("{:>20}: {:5d} iterations, train = {:.6e}, val = {:.6e} ({:4.1f})".format(trainobj.name, nit, trainerr, valerr, valerrratio))
 	
+		# And we create a plot
+		if self.config.getboolean("train", "autoplot"):
+			plotsdirpath = os.path.join(self.workdir, "plots")
+			if not os.path.exists(plotsdirpath):
+				os.makedirs(plotsdirpath)
+			
+			#plot.summaryerrevo(self.committee)
+			plot.summaryerrevo(self.committee, filepath=os.path.join(plotsdirpath, "summaryerrevo.png"))
 	
-		#self.optit = 0 # The iteration counter
-#		self.optcall = 0 # The cost function call counter
-#		self.optitcall = 0 # Idem, but gets reset at each new iteration
-#		self.opterr = np.inf # The current cost function value on the training set
-#		
-#		# And some lists describing the optimization:
-#		self.opterrs = [] # The cost function value on the training set at each (!) call
-#		
-#		self.optitparams = [] # A copy of the network parameters at each iteration
-#		self.optiterrs_train = [] # The cost function value on the training set at each iteration
-#		self.optiterrs_val = [] # The cost function value on the validation set at each iteration
-#
-#		self.optitcalls = [] # The cost function call counter at each iteration
-#		self.optittimes = [] # Time taken for iteration, in seconds
-#		self.optbatchchangeits = [] # Iteration counter (in fact indices) when the batche gets changed
 
 	def predict(self, inputs):
 		"""
