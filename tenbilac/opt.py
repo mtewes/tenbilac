@@ -37,6 +37,10 @@ def multnetbfgs(training, nepochs=10, maxiter_sum=200, maxiter_mult=200, gtol=1e
 	"""
 	
 	# We first start by optimizing only the sum layers, leaving the mult-layer as it is:
+	if "maxiter" in kwargs:
+		logger.warning("maxiter IN MULTNETBFGS IS FISHY. FOR NOW JUST REMOVING IT. IT WILL SOON BE REMOVED")
+		del kwargs["maxiter"]
+
 	for epoch in range(nepochs):
 		logger.info("Epoch {}/{} starting".format(epoch, nepochs))
 		
