@@ -93,20 +93,29 @@ def paramsevo(ax, train, wnetpart=None):
 		optitparams = np.array(train.optitparams)
 	
 	paramlabels = mynet.get_paramlabels()
-	
+	multmode = False
 
 	assert optitparams.shape[1] == mynet.nparams()
 	for paramindex in range(mynet.nparams()):
+		
 		label = paramlabels[paramindex]
 		if label.endswith("_bias"):
 			ls = "--"
 		elif label.endswith("_weight"):
 			ls = "-"
-		layername = re.match("layer-(.*)_(.*)", label).group(1)
+			
+		layermode = re.match("layer-(.*)-(.*)_(.*)", label).group(1)
+		layername = re.match("layer-(.*)-(.*)_(.*)", label).group(2)
+
 		if layername == "o":
 			color="black"
-		else:
+		elif layermode == "sum":
 			color="blue"
+		elif layermode == "mult":
+			multmode = True
+			color="green"
+		else:
+			raise ValueError("Layer mode {} unknown".format(layermode))
 		
 		pla = ax.plot(optits, optitparams[:,paramindex], ls=ls, color=color)
 	
@@ -121,7 +130,14 @@ def paramsevo(ax, train, wnetpart=None):
 	line = matplotlib.lines.Line2D([], [], color='black', marker='', ls="-", label='Weight')
 	dashed = matplotlib.lines.Line2D([], [], color='black', marker='', ls="--", label='Bias')
 	
-	ax.legend(handles=[line, dashed, black_patch, red_patch])
+	handles=[line, dashed, black_patch, red_patch]
+	if multmode:
+		red_patch = matplotlib.patches.Patch(color='blue', label='$\Sigma$ Hidden layers')
+		green_patch = matplotlib.patches.Patch(color='green', label='$\Pi$ Hidden layers')
+		handles[-1] = red_patch
+		handles += [green_patch]
+
+	ax.legend(handles=handles)
 
 
 

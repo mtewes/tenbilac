@@ -61,7 +61,9 @@ net.addnoise(multwscale=0.0, multbscale=0.0, wscale=0.1, bscale=0.1)
 
 tenbilac.plot.netviz(net, title="Ready!")
 
-training.opt(algo="multnetbfgs")#, mbsize=None, mbfrac=1.0, mbloops=1, maxiter=20, gtol=1e-8)
+training.opt(algo="multnetbfgs", mbsize=None, mbfrac=1.0, mbloops=5, gtol=1e-10, nepochs=10, maxiter_sum=200, maxiter_mult=200)
+#training.set_paramslice(mode="sum")
+#training.opt(algo="bfgs", mbsize=None, mbfrac=1.0, mbloops=5, gtol=1e-10, maxiter=200)
 
 print net.report()
 

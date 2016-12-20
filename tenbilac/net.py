@@ -175,8 +175,8 @@ class Net():
 		#if schema == 2:
 		for l in self.layers[::-1]:
 				
-			paramlabels.extend(l.nn*["layer-{l.name}_bias".format(l=l)])
-			paramlabels.extend(l.nn*l.ni*["layer-{l.name}_weight".format(l=l)])
+			paramlabels.extend(l.nn*["layer-{l.mode}-{l.name}_bias".format(l=l)])
+			paramlabels.extend(l.nn*l.ni*["layer-{l.mode}-{l.name}_weight".format(l=l)])
 		
 		assert len(paramlabels) == self.nparams()
 		
