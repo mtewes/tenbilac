@@ -33,14 +33,23 @@ from . import plot
 
 class Tenbilac():
 	
-	def __init__(self, configpath):
+	def __init__(self, configpath, configlist=None):
 		"""Constructor, does not take a ton of arguments, just a path to a config file.
+		
+		:param configlist: An optional list of settings that will have precedence over what is
+			written in the configfile. The structure is a list of tuples containing 3 strings (Section, Option, Value), such as
+			[("setup", "workdir", "bla")]
 		"""
 		
 		self.configpath = configpath
 		self.config = SafeConfigParser(allow_no_value=True)
 		logger.info("Reading in config from {}".format(configpath))
 		self.config.read(configpath)
+		if configlist:
+			logger.info("Using additional options: {}".format(configlist))
+			for param in configlist:
+				self.config.set(param[0], param[1], param[2])
+				
 		
 		# For easy access, we point to a few configuration items:
 		self.name = self.config.get("setup", "name")
