@@ -77,7 +77,7 @@ class Tenbilac():
 		
 		"""
 		
-		# Will be used to save files
+		# Can be used to save files at the level of this wrapper.
 		startdt = datetime.datetime.now()
 			
 		# For this wrapper, we only allow 3D inputs and 2D targets.
@@ -231,7 +231,7 @@ class Tenbilac():
 			dtstr = nomicrodt.isoformat().replace(":", "-")
 			configcopyname = dtstr + "_" + os.path.basename(self.configpath)
 			configcopypath = os.path.join(self.workdir, configcopyname)
-			shutil.copy(self.configpath, configcopypath + "_running")
+			shutil.copy(self.configpath, configcopypath + "_running") # For now, we add this "_running". Will be removed when done.
 
 
 		# Saving the normers, now that we have the directories
@@ -291,6 +291,7 @@ class Tenbilac():
 		logger.info("{}: done with the training".format(str(self)))
 		
 		if self.config.getboolean("setup", "copyconfig"):
+			# We remove the "_running"
 			if os.path.exists(configcopypath + "_running"):
 				os.rename(configcopypath + "_running", configcopypath) # We take care reusign the copy, and not copying again what might already have changed...
 					
