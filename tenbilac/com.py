@@ -13,6 +13,7 @@ All the info is in the config files, there are NO secret instance attributes wor
 from ConfigParser import SafeConfigParser
 import multiprocessing
 import os
+import shutil
 import glob
 import datetime
 import numpy as np
@@ -75,7 +76,10 @@ class Tenbilac():
 		the independent processes reading it again.
 		
 		"""
-				
+		
+		# Will be used to save files
+		startdt = datetime.datetime.now()
+			
 		# For this wrapper, we only allow 3D inputs and 2D targets.
 		if (inputs.ndim) != 3 or (targets.ndim) != 2:
 			raise ValueError("This wrapper only accepts 3D inputs and 2D targets, you have {} and {}".format(inputs.shape, targets.shape))
@@ -187,7 +191,7 @@ class Tenbilac():
 			
 			if oldtrainobj is None:
 			
-				if self.config.get("net", "startidentity"):
+				if self.config.getboolean("net", "startidentity"):
 					trainobj.net.setidentity(
 						onlyn=self.config.getint("net", "onlynidentity")
 						)
@@ -220,6 +224,15 @@ class Tenbilac():
 			for dirpath in trainobj.dirstomake:
 				if not os.path.isdir(dirpath):
 					os.makedirs(dirpath)
+
+		# Copying the config file into the workdir, with a timestamp in the filename
+		if self.config.getboolean("setup", "copyconfig"):
+			nomicrodt = startdt.replace(microsecond=0) # Makes format simpler
+			dtstr = nomicrodt.isoformat().replace(":", "-")
+			configcopyname = dtstr + "_" + os.path.basename(self.configpath)
+			configcopypath = os.path.join(self.workdir, configcopyname)
+			shutil.copy(self.configpath, configcopypath + "_running")
+
 
 		# Saving the normers, now that we have the directories
 		if self.config.getboolean("norm", "oninputs"):
@@ -276,6 +289,11 @@ class Tenbilac():
 			parmap.parmap(_trainworker, self.committee, ncpu)
 		
 		logger.info("{}: done with the training".format(str(self)))
+		
+		if self.config.getboolean("setup", "copyconfig"):
+			if os.path.exists(configcopypath + "_running"):
+				os.rename(configcopypath + "_running", configcopypath) # We take care reusign the copy, and not copying again what might already have changed...
+					
 		# We close with a summary of the results
 		self.summary()
 	
