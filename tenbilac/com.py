@@ -400,6 +400,8 @@ def _trainworker(trainobj):
 	starttime = datetime.datetime.now()
 	p = multiprocessing.current_process()
 	logger.info("{} is starting to train with PID {} and kwargs {}".format(p.name, p.pid, trainobj._trainkwargdict))
+	np.random.seed() # So that every worker uses different random numbers when selecting minibatches etc
+	# Of course we DONT feed any static number to the seed, as we want it to be different every time!
 	trainobj.opt(**trainobj._trainkwargdict)
 	endtime = datetime.datetime.now()
 	logger.info("{} is done, it took {}".format(p.name, str(endtime - starttime)))
