@@ -42,7 +42,7 @@ def multnetbfgs(training, nepochs=10, maxiter_sum=200, maxiter_mult=200, gtol=1e
 		del kwargs["maxiter"]
 
 	for epoch in range(nepochs):
-		logger.info("Epoch {}/{} starting".format(epoch, nepochs))
+		logger.info("Epoch {}/{} starting".format(epoch+1, nepochs))
 		
 		if maxiter_sum > 0:
 			training.set_paramslice(mode="sum")
