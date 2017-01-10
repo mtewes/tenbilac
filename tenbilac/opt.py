@@ -47,7 +47,6 @@ def multnetbfgs(training, nepochs=10, maxiter_sum=200, maxiter_mult=200, gtol=1e
 		if maxiter_sum > 0:
 			training.set_paramslice(mode="sum")
 			bfgs(training, maxiter=maxiter_sum, gtol=gtol, **kwargs)
-			training.end()
 			logger.info("Optimisation sum layers done.")
 		else:
 			logger.info("Not optimising sum layers.")
@@ -55,7 +54,6 @@ def multnetbfgs(training, nepochs=10, maxiter_sum=200, maxiter_mult=200, gtol=1e
 		if maxiter_mult > 0:
 			training.set_paramslice(mode="mult")
 			bfgs(training, maxiter=maxiter_mult, gtol=gtol, **kwargs)
-			training.end()
 			logger.info("Optimisation mult layers done.")
 		else:
 			logger.info("Not optimising mult layers.")
