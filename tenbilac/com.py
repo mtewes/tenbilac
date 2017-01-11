@@ -225,13 +225,16 @@ class Tenbilac():
 				if not os.path.isdir(dirpath):
 					os.makedirs(dirpath)
 
-		# Copying the config file into the workdir, with a timestamp in the filename
+		# Writing the config into the workdir, with a timestamp in the filename
 		if self.config.getboolean("setup", "copyconfig"):
 			nomicrodt = startdt.replace(microsecond=0) # Makes format simpler
 			dtstr = nomicrodt.isoformat().replace(":", "-")
 			configcopyname = dtstr + "_" + os.path.basename(self.configpath)
 			configcopypath = os.path.join(self.workdir, configcopyname)
-			shutil.copy(self.configpath, configcopypath + "_running") # For now, we add this "_running". Will be removed when done.
+			with open(configcopypath + "_running", 'wb') as configfile: # For now, we add this "_running". Will be removed when done.
+				self.config.write(configfile)
+			# No, we don't copy the file as (1) it might already have changed and (2) some options might have been passed as configlist.
+			#shutil.copy(self.configpath, configcopypath + "_running")
 
 
 		# Saving the normers, now that we have the directories
@@ -397,6 +400,8 @@ def _trainworker(trainobj):
 	starttime = datetime.datetime.now()
 	p = multiprocessing.current_process()
 	logger.info("{} is starting to train with PID {} and kwargs {}".format(p.name, p.pid, trainobj._trainkwargdict))
+	np.random.seed() # So that every worker uses different random numbers when selecting minibatches etc
+	# Of course we DONT feed any static number to the seed, as we want it to be different every time!
 	trainobj.opt(**trainobj._trainkwargdict)
 	endtime = datetime.datetime.now()
 	logger.info("{} is done, it took {}".format(p.name, str(endtime - starttime)))
