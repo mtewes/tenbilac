@@ -48,9 +48,8 @@ training = tenbilac.train.Training(net, dat, errfctname="mse", regulweight=0.01,
 
 # Adding some (gaussian) noise to the weights and bias to initialise
 training.net.addnoise(wscale=0.3, bscale=0.3)
-
 # We train this normal (non-inverse) regression with params as inputs, and observations as output:
-training.minibatch_bfgs(mbsize=50, maxiter=500)
+training.opt(algo="bfgs", mbsize=50, maxiter=500)
 
 # Predicting the testparams
 normtestpreds = net.run(normtestparams)
@@ -74,6 +73,6 @@ ax.legend(loc='best')
 
 plt.tight_layout()
 
-tenbilac.plot.netviz(training)
+tenbilac.plot.netviz(net)
 plt.show()	
 

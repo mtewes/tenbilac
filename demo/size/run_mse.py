@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 (obs_normer, params_normer, normobs, normparams, normuniparams, normuniobs, normtestobs) = tenbilac.utils.readpickle("data.pkl")
 
 
-net = tenbilac.net.Tenbilac(1, [7])
+net = tenbilac.net.Net(1, [7])
 net.setidentity()
 net.addnoise(wscale=0.1, bscale=0.1)
 
@@ -17,9 +17,9 @@ traindata = tenbilac.data.Traindata(normobs, normparams, valfrac=0.5, shuffle=Tr
 
 train = tenbilac.train.Training(net, traindata, errfctname="mse")
 
-train.minibatch_bfgs(mbsize=100, mbloops=5, maxiter=50)
+train.opt(algo="bfgs", mbsize=100, mbloops=5, maxiter=50)
 
-tenbilac.plot.paramscurve(train, filepath="train_mse.png")
+tenbilac.plot.sumevo(train, filepath="train_mse.png")
 
 train.save("train_mse.pkl", keepdata=True)
 

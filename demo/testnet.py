@@ -60,7 +60,7 @@ dat = tenbilac.data.Traindata(inputs=inputs, targets=targets)
 training = tenbilac.train.Training(net, dat, errfctname="msb")
 
 # We train this normal (non-inverse) regression with params as inputs, and observations as output:
-training.minibatch_bfgs(maxiter=3)
+training.opt(algo="bfgs", maxiter=3)
 
 
 

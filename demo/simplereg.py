@@ -50,7 +50,7 @@ training = tenbilac.train.Training(net, dat, errfctname="mse")
 training.net.addnoise(wscale=0.3, bscale=0.3)
 
 # We train this normal (non-inverse) regression with params as inputs, and observations as output:
-training.minibatch_bfgs(mbsize=50, maxiter=500)
+training.opt(algo="bfgs", mbsize=50, maxiter=500)
 
 # Predicting the testparams
 normtestpreds = net.run(normtestparams)
