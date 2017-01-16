@@ -44,7 +44,9 @@ class Tenbilac():
 		
 		self.configpath = configpath
 		self.config = SafeConfigParser(allow_no_value=True)
-		logger.info("Reading in config from {}".format(configpath))
+		if not os.path.exists(self.configpath):
+			raise RuntimeError("File {} does not exist!".format(self.configpath))
+		logger.info("Reading in config from {}...".format(configpath))
 		self.config.read(configpath)
 		if configlist:
 			logger.info("Using additional options: {}".format(configlist))
