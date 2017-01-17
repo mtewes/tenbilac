@@ -641,15 +641,16 @@ def netviz(net, title="", legend=True, filepath=None):
 
 
 
-def summaryerrevo(committee, filepath=None):
+def summaryerrevo(committee, filepath=None, ax=None):
 	"""
 	First take at plotting the error curves of committee members, to compare their performances.
 	
 	:param committee: a list of Training objects
 	"""
 
-	fig = plt.figure(figsize=(14, 10))
-	ax = plt.subplot(1, 1, 1)
+	if ax is None:
+		fig = plt.figure(figsize=(14, 10))
+		ax = plt.subplot(1, 1, 1)
 	
 	# We sort the committee:
 	committee = sorted(committee, key=lambda trainobj: trainobj.optiterrs_train[-1], reverse=True)
@@ -676,6 +677,7 @@ def summaryerrevo(committee, filepath=None):
 
 		
 	ax.set_yscale('log')
+	#ax.set_xscale('log')
 	ax.set_xlabel("Iteration")
 	#ax.set_xlim((optits[0], optits[-1]))
 	ax.set_ylabel("Cost function value")
@@ -683,17 +685,14 @@ def summaryerrevo(committee, filepath=None):
 	#ax.set_title(train.title())
 
 
-	plt.tight_layout()
-	if filepath is None:
-		plt.show()	
-	else:
-		logger.info("Writing summaryerrevo to {}".format(filepath))
-		plt.savefig(filepath)
-	plt.close() # Important, otherwise it's still around for the next plt.show()
-
-
-
-
+	if ax is None:
+		plt.tight_layout()
+		if filepath is None:
+			plt.show()	
+		else:
+			logger.info("Writing summaryerrevo to {}".format(filepath))
+			plt.savefig(filepath)
+		plt.close() # Important, otherwise it's still around for the next plt.show()
 
 
 
