@@ -55,7 +55,11 @@ class Tenbilac():
 				
 		
 		# For easy access, we point to a few configuration items:
-		self.name = self.config.get("setup", "name")
+		self.name = self.config.get("setup", "name") 
+		if self.name is None or len(self.name.strip()) == 0: # if the ":" is missing as well, confirparser reads None
+			# Then we use the filename
+			self.name = os.path.splitext(os.path.basename(configpath))[0]
+					
 		self.workdir = self.config.get("setup", "workdir")
 	
 	def __str__(self):
@@ -340,6 +344,12 @@ class Tenbilac():
 			#plot.summaryerrevo(self.committee)
 			plot.summaryerrevo(self.committee, filepath=os.path.join(plotsdirpath, "summaryerrevo.png"))
 	
+	def minimize(self, ):
+		"""
+		Prepares a "copy" of the current workdir containing all the information needed for predictions, but
+		without all the (potentially large) logs, plots, etc.
+		
+		"""
 
 	def predict(self, inputs):
 		"""
@@ -408,5 +418,13 @@ def _trainworker(trainobj):
 	endtime = datetime.datetime.now()
 	logger.info("{} is done, it took {}".format(p.name, str(endtime - starttime)))
 	
-	
 
+
+
+	
+def _predictworker(trainobj):
+	"""
+	in progress
+	"""
+	preds = trainobj.net.predict(trainobj.predinputs)
+	return preds
