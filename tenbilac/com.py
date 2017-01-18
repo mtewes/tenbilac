@@ -344,12 +344,7 @@ class Tenbilac():
 			#plot.summaryerrevo(self.committee)
 			plot.summaryerrevo(self.committee, filepath=os.path.join(plotsdirpath, "summaryerrevo.png"))
 	
-	def minimize(self, ):
-		"""
-		Prepares a "copy" of the current workdir containing all the information needed for predictions, but
-		without all the (potentially large) logs, plots, etc.
-		
-		"""
+
 
 	def predict(self, inputs):
 		"""
@@ -422,9 +417,3 @@ def _trainworker(trainobj):
 
 
 	
-def _predictworker(trainobj):
-	"""
-	in progress
-	"""
-	preds = trainobj.net.predict(trainobj.predinputs)
-	return preds
