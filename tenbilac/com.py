@@ -171,7 +171,7 @@ class Tenbilac():
 			
 			
 			# A directory where the training can store its stuff
-			trainobjdir = os.path.join(self.workdir, "{}_{}".format("member", i))
+			trainobjdir = os.path.join(self.workdir, "member_{}".format(i))
 			trainobjpath = os.path.join(trainobjdir, "Training.pkl")
 			plotdirpath = os.path.join(trainobjdir, "plots")
 			
