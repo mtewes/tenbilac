@@ -109,10 +109,20 @@ class Net():
 		return "\n".join(txt)
 
 	
-	def save(self, filepath):
+	def resetcache(self):
+		"""
+		Purges the cache of every layer (e.g., to save memory before writing to file)
+		"""
+		for l in self.layers:
+			l.resetcache()
+	
+	
+	def save(self, filepath, resetcache=True):
 		"""
 		Saves self into a pkl file
 		"""
+		if resetcache:
+			self.resetcache()
 		utils.writepickle(self, filepath)		
 	
 	

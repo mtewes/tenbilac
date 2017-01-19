@@ -61,6 +61,8 @@ class Tenbilac():
 			self.name = os.path.splitext(os.path.basename(configpath))[0]
 					
 		self.workdir = self.config.get("setup", "workdir")
+		self.inputnormerpath = os.path.join(self.workdir, "input_normer.pkl")
+		self.targetnormerpath = os.path.join(self.workdir, "target_normer.pkl")
 	
 	def __str__(self):
 		return "Tenbilac '{self.name}'".format(self=self)
@@ -89,18 +91,31 @@ class Tenbilac():
 		# For this wrapper, we only allow 3D inputs and 2D targets.
 		if (inputs.ndim) != 3 or (targets.ndim) != 2:
 			raise ValueError("This wrapper only accepts 3D inputs and 2D targets, you have {} and {}".format(inputs.shape, targets.shape))
-				
+		
+		# Just for logging
+		if os.path.exists(self.workdir):
+			logger.info("The workdir already exists.")
+		else:
+			logger.info("The workdir does not exist, it will be created.")
+		
 		# Creating the normers and norming, if desired
 		if self.config.getboolean("norm", "oninputs"):
 			logger.info("{}: normalizing training inputs...".format((str(self))))
-			self.input_normer = data.Normer(inputs, type=self.config.get("norm", "inputtype"))
+			if self.config.getboolean("norm", "takeover") and os.path.exists(self.inputnormerpath):
+				self.input_normer = utils.readpickle(self.inputnormerpath)
+			else: # We make a new one:
+				self.input_normer = data.Normer(inputs, type=self.config.get("norm", "inputtype"))
+			# And we norm the data:
 			inputs = self.input_normer(inputs)
 		else:
 			logger.info("{}: inputs do NOT get normed.".format((str(self))))
 		
 		if self.config.getboolean("norm", "ontargets"):
 			logger.info("{}: normalizing training targets...".format((str(self))))
-			self.target_normer = data.Normer(targets, type=self.config.get("norm", "targettype"))
+			if self.config.getboolean("norm", "takeover") and os.path.exists(self.targetnormerpath):
+				self.target_normer = utils.readpickle(self.targetnormerpath)
+			else:
+				self.target_normer = data.Normer(targets, type=self.config.get("norm", "targettype"))
 			targets = self.target_normer(targets)
 		else:
 			logger.info("{}: targets do NOT get normed.".format((str(self))))
@@ -136,7 +151,7 @@ class Tenbilac():
 					multactfctname=self.config.get("net", "multactfctname"),
 					inames=inputnames,
 					onames=targetnames,
-					name='{}-{}'.format(self.name, i)
+					name='{}_{}'.format(self.name, i)
 					)
 			elif nettype == "MultNet":
 				netobj = multnet.MultNet(
@@ -149,14 +164,14 @@ class Tenbilac():
 					multactfctname=self.config.get("net", "multactfctname"),
 					inames=inputnames,
 					onames=targetnames,
-					name='{}-{}-{}'.format(nettype, self.name, i)
+					name='{}_{}'.format(self.name, i)
 					)
 			else:
 				raise RuntimeError("Don't know network type '{}'".format(nettype))
 			
 			
 			# A directory where the training can store its stuff
-			trainobjdir = os.path.join(self.workdir, "{}_{:03d}".format(self.name, i))
+			trainobjdir = os.path.join(self.workdir, "member_{}".format(i))
 			trainobjpath = os.path.join(trainobjdir, "Training.pkl")
 			plotdirpath = os.path.join(trainobjdir, "plots")
 			
@@ -186,7 +201,7 @@ class Tenbilac():
 				autoplot=self.config.getboolean("train", "autoplot"),
 				trackbiases=self.config.getboolean("train", "trackbiases"),
 				verbose=self.config.getboolean("train", "verbose"),
-				name='Train-{}-{}'.format(self.name, i)
+				name='{}_{}'.format(self.name, i)
 				)
 			
 			# We keep the directories at hand with this object
@@ -233,9 +248,7 @@ class Tenbilac():
 
 		# Writing the config into the workdir, with a timestamp in the filename
 		if self.config.getboolean("setup", "copyconfig"):
-			nomicrodt = startdt.replace(microsecond=0) # Makes format simpler
-			dtstr = nomicrodt.isoformat().replace(":", "-")
-			configcopyname = dtstr + "_" + os.path.basename(self.configpath)
+			configcopyname = datetimestr(startdt) + ".cfg"
 			configcopypath = os.path.join(self.workdir, configcopyname)
 			with open(configcopypath + "_running", 'wb') as configfile: # For now, we add this "_running". Will be removed when done.
 				self.config.write(configfile)
@@ -245,9 +258,9 @@ class Tenbilac():
 
 		# Saving the normers, now that we have the directories
 		if self.config.getboolean("norm", "oninputs"):
-			utils.writepickle(self.input_normer, os.path.join(self.workdir, "input_normer.pkl"))
+			utils.writepickle(self.input_normer, self.inputnormerpath)
 		if self.config.getboolean("norm", "ontargets"):
-			utils.writepickle(self.target_normer, os.path.join(self.workdir, "target_normer.pkl"))
+			utils.writepickle(self.target_normer, self.targetnormerpath)
 	
 		# Preparing the training configuration. So far, we train the committee with identical params.
 		# In future, we could do this differently.
@@ -303,6 +316,9 @@ class Tenbilac():
 			# We remove the "_running"
 			if os.path.exists(configcopypath + "_running"):
 				os.rename(configcopypath + "_running", configcopypath) # We take care reusign the copy, and not copying again what might already have changed...
+		
+		if self.config.getboolean("setup", "minimize"):
+			self.minimize(dt=startdt)
 					
 		# We close with a summary of the results
 		self.summary()
@@ -313,11 +329,11 @@ class Tenbilac():
 		A method that finds available committee members by itself, exploring the file system, and reads them in.
 		"""	
 		
-		trainpaths = sorted(glob.glob(os.path.join(self.workdir, "*/Training.pkl")))
+		trainpaths = sorted(glob.glob(os.path.join(self.workdir, "member_*/Training.pkl")))
 		logger.info("Found {} committee members to read in...".format(len(trainpaths)))
 		self.committee = [utils.readpickle(trainpath) for trainpath in trainpaths]
-		
-		
+		return trainpaths # Potentially useful
+	
 	
 	def summary(self):
 		"""
@@ -343,7 +359,53 @@ class Tenbilac():
 			
 			#plot.summaryerrevo(self.committee)
 			plot.summaryerrevo(self.committee, filepath=os.path.join(plotsdirpath, "summaryerrevo.png"))
+
 	
+	def minimize(self, destdir=None, dt=None):
+		"""
+		Prepares a self-sufficient "copy" of the current workdir containing all the information needed for predictions, but
+		without all the (potentially large) logs, plots, etc.
+		
+		:params destdir: path to where to save the results
+		:params dt: if destdir is not given, datetime object to use to name the destdir
+		
+		"""
+		
+		if dt is None:
+			dt = datetime.datetime.now()
+		if destdir is None:
+			destdir = os.path.join(self.workdir, datetimestr(dt))
+		
+		logger.info("Minimizing into '{}'".format(destdir))
+		memberfilepaths = self._readmembers() # Also fills self.committee!
+		
+		if os.path.exists(destdir):
+			logger.warning("Destdir for minimization already exists, I will likely overwrite stuff!")
+		else:
+			os.makedirs(destdir)
+		
+		for (origfilepath, trainobj) in zip(memberfilepaths, self.committee):
+			memberdestdirname = os.path.split(os.path.split(origfilepath)[0])[-1] # this is e.g. "member_010"
+			memberdestdirpath = os.path.join(destdir, memberdestdirname)
+			if not os.path.exists(memberdestdirpath):
+				os.makedirs(memberdestdirpath)
+			memberdestfilepath = os.path.join(memberdestdirpath, "Training.pkl")
+			
+			# And we make a tiny new training object, containing just the net
+			net = trainobj.net
+			net.resetcache()
+			tinytrainobj = train.Training(net, None, name=trainobj.name)
+			tinytrainobj.save(memberdestfilepath)
+			
+		# We also copy the normers
+		if os.path.exists(self.inputnormerpath):
+			logger.info("Copying input normer...")
+			shutil.copy(self.inputnormerpath, os.path.join(destdir, "input_normer.pkl"))
+		if os.path.exists(self.targetnormerpath):
+			logger.info("Copying target normer...")
+			shutil.copy(self.inputnormerpath, os.path.join(destdir, "target_normer.pkl"))
+		
+		logger.info("Done with minimizing.")
 
 
 	def predict(self, inputs):
@@ -399,6 +461,15 @@ class Tenbilac():
 		return retarray
 		
 
+
+def datetimestr(dt):
+	"""
+	Returns a string that can be used in filenames
+	"""
+	nomicrodt = dt.replace(microsecond=0) # Makes format simpler
+	return nomicrodt.isoformat().replace(":", "-")
+	
+	
 
 def _trainworker(trainobj):
 	"""

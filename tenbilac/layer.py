@@ -39,11 +39,17 @@ class Layer():
 		self.biases = np.zeros(self.nn) # each neuron has its bias
 		
 		# We will store the last "run" of the layer in a cache:
+		self.resetcache()
+	
+	def resetcache(self):
+		"""
+		Purges the cache, to save memory (typically before saving...)
+		"""
 		self.cache_lastinputs = None
 		self.cache_lastweights = None
 		self.cache_lastbiases = None
 		self.cache_lastoutputs = None
-		
+	
 		
 	def __str__(self):
 		return "Layer '{self.name}', mode {self.mode}, ni {self.ni}, nn {self.nn}, actfct {self.actfct.__name__}".format(self=self)
@@ -131,7 +137,7 @@ class Layer():
 		"""
 		return self.nn * (self.ni + 1)
 	
-	
+		
 	def run(self, inputs):
 		"""
 		Computes output from input, as "numpyly" as possible, using only np.dot (note that np.ma.dot does not
