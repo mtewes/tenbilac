@@ -19,4 +19,5 @@ ten = tenbilac.com.Tenbilac("tenbilac.cfg")
 
 ten.train(inputs, targets)
 
-#ten.predict(inputs)
+#preds = ten.predict(inputs)
+#print preds
