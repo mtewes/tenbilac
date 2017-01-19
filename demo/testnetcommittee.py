@@ -55,7 +55,7 @@ ctraining = tenbilac.committee.CommTraining(comm, dat=dat, errfctname="mse")
 ctraining.call(attr='net', method='addnoise', wscale=0.3, bscale=0.3)
 
 # In the simplereg.py example this would be training.minibatch_bfgs()
-ctraining.call(method='bfgs', call_ncpu=3, maxiter=500)#, mbsize=50, )
+ctraining.call(method='opt', call_ncpu=3, maxiter=500, algo="bfgs")#, mbsize=50, )
 
 # Predicting the testparams, notice the exact same call method.
 normtestpreds = comm.call(method='run', inputs=normtestparams)
@@ -71,7 +71,7 @@ ax.plot(params.T, obs.T, "b.", label="obs")
 for ii in range(len(comm.members)): 
 	ax.plot(testparams.T, testpreds[ii].T, label='%i: %s' % (ii, comm.members[ii]))
 
-ax.plot(testparams.T, np.median(testpreds.T, axis=2), lw=2, label='median fit')
+ax.plot(testparams.T, np.mean(testpreds.T, axis=2), lw=2, label='mean fit')
 ax.plot(testparams.T, f(testparams.T), "k--", lw=2, label="truth")
 ax.set_xlabel(r"$x$", fontsize=18)
 ax.set_ylabel(r"$y = f(x) + \mathrm{noise}$", fontsize=18)

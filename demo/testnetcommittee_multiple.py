@@ -59,7 +59,7 @@ wscales = [0.25, 0.3, 0.35]
 [t.net.addnoise(wscale=wscales[i], bscale=0.3) for i, t in enumerate(ctraining.trainings)]
 
 # In the simplereg.py example this would be training.bfgs()
-ctraining.call(method='bfgs', call_ncpu=3, maxiter=500)
+ctraining.call(method='opt', call_ncpu=3, maxiter=500, algo="bfgs")
 
 # Predicting the testparams, notice the exact same call method.
 normtestpreds = comm.call(method='run', inputs=normtestparams)

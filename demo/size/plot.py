@@ -47,7 +47,6 @@ preds_avg = params_normer.denorm(train_avg.net.run(normuniobs))
 firstreapreds_avg = params_normer.denorm(train_avg.net.run(normuniobs[0]))
 biases_avg = np.mean(preds_avg, axis=0) - uniparams
 
-
 trutheta = np.linspace(0.0, 2.2, 100)
 trud = np.sqrt(4.0 + np.square(trutheta))
 
