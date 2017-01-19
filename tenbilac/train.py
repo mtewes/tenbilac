@@ -26,12 +26,14 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msrb", regulweight=None, regulfctname=None, itersavepath=None, saveeachit=False, autoplotdirpath=".", autoplot=False, trackbiases=False, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msb", regulweight=None, regulfctname=None, itersavepath=None, saveeachit=False, autoplotdirpath=".", autoplot=False, trackbiases=False, verbose=False, name=None):
 		"""
 
 		Sets up
 		- housekeeping lists
 		- error function
+		
+		:param dat: can be None, if you want a dummy container for your Net.
 		
 		:param trackbiases: If True, will track and plot the evolution of biases as function of input feature values.
 			Could get massive and slow down the training. Also the plot is rather slow. 
@@ -40,7 +42,8 @@ class Training:
 		:param saveeachit: If True, writes the full status and history to disk at each iteration.
 			If False, only some snapshots are written, but they still contain the full history!
 		:type saveeachtit: bool
-			
+		
+		
 		"""
 		
 		self.name = name
@@ -49,13 +52,14 @@ class Training:
 		self.set_dat(dat)
 		
 		# Let's check compatibility between those two!
-		assert net.ni == self.dat.getni()
-		if errfctname in ["mse", "msb", "msrb", "msre", "msbw"]:
-			assert net.no == self.dat.getno()
-		elif errfctname in ["msbwnet"]:
-			assert net.no == 2*self.dat.getno()
-		else:
-			logger.warning("Unknown error function, will blindly go ahead...")
+		if dat != None:
+			assert net.ni == self.dat.getni()
+			if errfctname in ["mse", "msb", "msrb", "msre", "msbw"]:
+				assert net.no == self.dat.getno()
+			elif errfctname in ["msbwnet"]:
+				assert net.no == 2*self.dat.getno()
+			else:
+				logger.warning("Unknown error function, will blindly go ahead...")
 				
 		# Setting up the cost function
 		self.errfctname = errfctname
@@ -103,7 +107,8 @@ class Training:
 		self.autoplotdirpath = autoplotdirpath
 		self.autoplot = autoplot
 		
-		logger.info("Done with setup of {self}".format(self=self))
+		if dat is not None: # Otherwise it's just to create a dummy container, no need to report
+			logger.info("Done with setup of {self}".format(self=self))
 		
 		# And let's test this out before we start, so that it fails fast in case of a problem.
 		# But we only do so if the file does not yet exist, to avoid overwriting an existing training.
@@ -229,13 +234,14 @@ class Training:
 		
 	
 
-	def save(self, filepath, keepdata=False):
+	def save(self, filepath, keepdata=False, resetcache=True):
 		"""
 		Saves the training progress into a pkl file
 		As the training data is so massive, by default we do not save it!
 		Note that this might be done at each iteration!
 		"""
-
+		if resetcache is True:
+			self.net.resetcache()
 		if keepdata is True:
 			logger.info("Writing training to disk and keeping the data...")
 			utils.writepickle(self, filepath)	
