@@ -554,9 +554,9 @@ def netviz(net, title="", legend=True, filepath=None):
 	"""
 	Draws a visualisation of the network in the style of the `Tensorflow` playground.
 	
-	:param train: the Train class for the network
-	:param title: The string to display as title. Default=`None`
-	:param legend: Whether to show the legend for the tickness of the lines and points. Default=``
+	:param net: the network
+	:param title: The string to display as title.
+	:param legend: Whether to show the legend for the tickness of the lines and points.
 	:param filepath: The file path to save the data to. If `None` (default) shows the figures.
 	"""
 	
