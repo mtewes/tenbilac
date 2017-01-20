@@ -304,7 +304,7 @@ class Training:
 		#title += r"$;\ \mathrm{{it:{:05d}}}$".format(self.optit)
 		#title += r"$;\ \mathrm{{{tmin:.1f}min}}$".format(tmin=np.sum(self.optittimes)/60.0)
 		
-		title = str(self.net) + ", {} it, {:.1f} min".format(self.optit, np.sum(self.optittimes)/60.0)
+		title = str(self) + ", {} it, {:.1f} min".format(self.optit, np.sum(self.optittimes)/60.0)
 		
 		if filepath is 'None':
 			filepath = self.plotpath("netviz")
