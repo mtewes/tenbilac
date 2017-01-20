@@ -99,11 +99,14 @@ class Tenbilac():
 			logger.info("The workdir does not exist, it will be created.")
 		
 		# Creating the normers and norming, if desired
+		writeinputnormer = False # Should the new normers be written to disk, later?
+		writetargetnormer = False
 		if self.config.getboolean("norm", "oninputs"):
 			logger.info("{}: normalizing training inputs...".format((str(self))))
 			if self.config.getboolean("norm", "takeover") and os.path.exists(self.inputnormerpath):
 				self.input_normer = utils.readpickle(self.inputnormerpath)
 			else: # We make a new one:
+				writeinputnormer = True
 				self.input_normer = data.Normer(inputs, type=self.config.get("norm", "inputtype"))
 			# And we norm the data:
 			inputs = self.input_normer(inputs)
@@ -115,6 +118,7 @@ class Tenbilac():
 			if self.config.getboolean("norm", "takeover") and os.path.exists(self.targetnormerpath):
 				self.target_normer = utils.readpickle(self.targetnormerpath)
 			else:
+				writetargetnormer = True
 				self.target_normer = data.Normer(targets, type=self.config.get("norm", "targettype"))
 			targets = self.target_normer(targets)
 		else:
@@ -257,9 +261,9 @@ class Tenbilac():
 
 
 		# Saving the normers, now that we have the directories
-		if self.config.getboolean("norm", "oninputs"):
+		if writeinputnormer:
 			utils.writepickle(self.input_normer, self.inputnormerpath)
-		if self.config.getboolean("norm", "ontargets"):
+		if writetargetnormer:
 			utils.writepickle(self.target_normer, self.targetnormerpath)
 	
 		# Preparing the training configuration. So far, we train the committee with identical params.
@@ -357,7 +361,6 @@ class Tenbilac():
 			if not os.path.exists(plotsdirpath):
 				os.makedirs(plotsdirpath)
 			
-			#plot.summaryerrevo(self.committee)
 			plot.summaryerrevo(self.committee, filepath=os.path.join(plotsdirpath, "summaryerrevo.png"))
 
 	
