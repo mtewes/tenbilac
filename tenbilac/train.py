@@ -287,18 +287,24 @@ class Training:
 		logger.info("Done with plots")
 
 	def plot_netviz(self, filepath='None', **kwargs):
-		write_mode = False
-		for l in self.net.layers:
-			if not l.mode == "sum":
-				write_mode = True
+		"""
+		Slightly different from the other plots as it takes a Net, not a Training.
+		"""
 		
-		if write_mode:
-			title = r"$\to$".join([r"${m}^{{{n}}}\mathrm{{{actfct}}}$".format(n=l.nn, m=plot.get_symbol(l.mode, False), actfct=l.actfct.__name__) for l in self.net.layers])
-		else:
-			title = r"$\to$".join([r"$\mathrm{{{n}/{actfct}}}$".format(n=l.nn, actfct=l.actfct.__name__) for l in self.net.layers])
-		title += r"$;\ \mathrm{{{}}}$".format(self.get_costfctname())
-		title += r"$;\ \mathrm{{it:{:05d}}}$".format(self.optit)
-		title += r"$;\ \mathrm{{{tmin:.1f}min}}$".format(tmin=np.sum(self.optittimes)/60.0)
+		#write_mode = False
+		#for l in self.net.layers:
+		#	if not l.mode == "sum":
+		#		write_mode = True
+		#
+		#if write_mode:
+		#	title = r"$\to$".join([r"${m}^{{{n}}}\mathrm{{{actfct}}}$".format(n=l.nn, m=plot.get_symbol(l.mode, False), actfct=l.actfct.__name__) for l in self.net.layers])
+		#else:
+		#	title = r"$\to$".join([r"$\mathrm{{{n}/{actfct}}}$".format(n=l.nn, actfct=l.actfct.__name__) for l in self.net.layers])
+		#title += r"$;\ \mathrm{{{}}}$".format(self.get_costfctname())
+		#title += r"$;\ \mathrm{{it:{:05d}}}$".format(self.optit)
+		#title += r"$;\ \mathrm{{{tmin:.1f}min}}$".format(tmin=np.sum(self.optittimes)/60.0)
+		
+		title = str(self.net) + ", {} it, {:.1f} min".format(self.optit, np.sum(self.optittimes)/60.0)
 		
 		if filepath is 'None':
 			filepath = self.plotpath("netviz")
