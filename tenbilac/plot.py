@@ -652,7 +652,7 @@ def summaryerrevo(committee, filepath=None, ax=None):
 		fig = plt.figure(figsize=(14, 10))
 		ax = plt.subplot(1, 1, 1)
 	else:
-		fig is None
+		fig = None
 	
 	# We sort the committee:
 	committee = sorted(committee, key=lambda trainobj: trainobj.optiterrs_train[-1], reverse=True)
