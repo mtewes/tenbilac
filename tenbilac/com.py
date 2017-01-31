@@ -37,7 +37,8 @@ class Tenbilac():
 	def __init__(self, configpath, configlist=None):
 		"""Constructor, does not take a ton of arguments, just a path to a config file.
 		Alternatively, the configpath can also just point to a directory (typically an existing tenbilac workdir),
-		and the alphabetically *last* .cfg file in this directory will be used.
+		and the alphabetically *last* .cfg file in this directory will be used, AND this configpath will also be used as workdir,
+		no matter what the config file says.
 		
 		:param configlist: An optional list of settings that will have precedence over what is
 			written in the configfile. The structure is a list of tuples containing 3 strings (Section, Option, Value), such as
@@ -60,6 +61,7 @@ class Tenbilac():
 			cfgfilepath = cfgfilepaths[-1]
 			logger.info("Found {} config files in dir, reading in {}...".format(len(cfgfilepaths), cfgfilepath))
 			self.config.read(cfgfilepath)
+			self.workdir = configpath
 		
 		else:
 			raise RuntimeError("File or dir {} does not exist!".format(self.configpath))
@@ -77,8 +79,14 @@ class Tenbilac():
 			# Then we use the filename
 			self.name = os.path.splitext(os.path.basename(configpath))[0]
 
+		# The workdir to be used
+		if os.path.isdir(configpath):
+			logger.info("Setting workdir to configpath")
+			self.workdir = configpath
+		else:
+			self.workdir = self.config.get("setup", "workdir")
+		
 		# For easy access, we point to a few configuration items:
-		self.workdir = self.config.get("setup", "workdir")
 		self.inputnormerpath = os.path.join(self.workdir, "input_normer.pkl")
 		self.targetnormerpath = os.path.join(self.workdir, "target_normer.pkl")
 	
@@ -426,7 +434,7 @@ class Tenbilac():
 			shutil.copy(self.inputnormerpath, os.path.join(destdir, "input_normer.pkl"))
 		if os.path.exists(self.targetnormerpath):
 			logger.info("Copying target normer...")
-			shutil.copy(self.inputnormerpath, os.path.join(destdir, "target_normer.pkl"))
+			shutil.copy(self.targetnormerpath, os.path.join(destdir, "target_normer.pkl"))
 		
 		# And we write the config.
 		configcopypath = os.path.join(destdir, self.name + ".cfg")
