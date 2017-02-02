@@ -16,8 +16,11 @@ logger = logging.getLogger(__name__)
 # And go:
 
 ten = tenbilac.com.Tenbilac("tenbilac.cfg")
-
 ten.train(inputs, targets)
 
-#preds = ten.predict(inputs)
-#print preds
+
+# Demo of alternative way to load an existing tenbilac object:
+#ten = tenbilac.com.Tenbilac("/vol/fohlen11/fohlen11_1/mtewes/tenbilac_demo_workdir/mini_tenbilac_2017-01-31T21-17-52")
+
+preds = ten.predict(inputs)
+print preds

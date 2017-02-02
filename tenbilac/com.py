@@ -36,6 +36,9 @@ class Tenbilac():
 	
 	def __init__(self, configpath, configlist=None):
 		"""Constructor, does not take a ton of arguments, just a path to a config file.
+		Alternatively, the configpath can also just point to a directory (typically an existing tenbilac workdir),
+		and the alphabetically *last* .cfg file in this directory will be used, AND this configpath will also be used as workdir,
+		no matter what the config file says.
 		
 		:param configlist: An optional list of settings that will have precedence over what is
 			written in the configfile. The structure is a list of tuples containing 3 strings (Section, Option, Value), such as
@@ -44,25 +47,50 @@ class Tenbilac():
 		
 		self.configpath = configpath
 		self.config = SafeConfigParser(allow_no_value=True)
-		if not os.path.exists(self.configpath):
-			raise RuntimeError("File {} does not exist!".format(self.configpath))
-		logger.info("Reading in config from {}...".format(configpath))
-		self.config.read(configpath)
+		
+		
+		if os.path.isfile(configpath): # Then we just read it
+			logger.info("Reading in config from {}...".format(configpath))
+			self.config.read(configpath)
+		
+		elif os.path.isdir(configpath): # We read the alphabetically last config file in this directory
+			cfgfilepaths = sorted(glob.glob(os.path.join(configpath, "*.cfg")))
+			if len(cfgfilepaths) == 0:
+				raise RuntimeError("No config file found in {}!".format(self.configpath))
+			
+			cfgfilepath = cfgfilepaths[-1]
+			logger.info("Found {} config files in dir, reading in {}...".format(len(cfgfilepaths), cfgfilepath))
+			self.config.read(cfgfilepath)
+			self.workdir = configpath
+		
+		else:
+			raise RuntimeError("File or dir {} does not exist!".format(self.configpath))
+				
 		if configlist:
 			logger.info("Using additional options: {}".format(configlist))
 			for param in configlist:
 				self.config.set(param[0], param[1], param[2])
 				
-		
-		# For easy access, we point to a few configuration items:
+		# If the name is not specified in the config, we use:
+		# - the filename of the config file if configpath is a file
+		# - the directory name, if configpath is a directory
 		self.name = self.config.get("setup", "name") 
 		if self.name is None or len(self.name.strip()) == 0: # if the ":" is missing as well, confirparser reads None
 			# Then we use the filename
 			self.name = os.path.splitext(os.path.basename(configpath))[0]
-					
-		self.workdir = self.config.get("setup", "workdir")
+
+		# The workdir to be used
+		if os.path.isdir(configpath):
+			logger.info("Setting workdir to configpath")
+			self.workdir = configpath
+		else:
+			self.workdir = self.config.get("setup", "workdir")
+		
+		# For easy access, we point to a few configuration items:
 		self.inputnormerpath = os.path.join(self.workdir, "input_normer.pkl")
 		self.targetnormerpath = os.path.join(self.workdir, "target_normer.pkl")
+	
+		logger.info("Constructed Tenbilac '{self.name}' with workdir '{self.workdir}'.".format(self=self))
 	
 	def __str__(self):
 		return "Tenbilac '{self.name}'".format(self=self)
@@ -252,7 +280,7 @@ class Tenbilac():
 
 		# Writing the config into the workdir, with a timestamp in the filename
 		if self.config.getboolean("setup", "copyconfig"):
-			configcopyname = datetimestr(startdt) + ".cfg"
+			configcopyname = self.name + "_" + datetimestr(startdt) + ".cfg"
 			configcopypath = os.path.join(self.workdir, configcopyname)
 			with open(configcopypath + "_running", 'wb') as configfile: # For now, we add this "_running". Will be removed when done.
 				self.config.write(configfile)
@@ -377,7 +405,7 @@ class Tenbilac():
 		if dt is None:
 			dt = datetime.datetime.now()
 		if destdir is None:
-			destdir = os.path.join(self.workdir, datetimestr(dt))
+			destdir = os.path.join(self.workdir, "mini_" + self.name + "_" + datetimestr(dt))
 		
 		logger.info("Minimizing into '{}'".format(destdir))
 		memberfilepaths = self._readmembers() # Also fills self.committee!
@@ -406,7 +434,12 @@ class Tenbilac():
 			shutil.copy(self.inputnormerpath, os.path.join(destdir, "input_normer.pkl"))
 		if os.path.exists(self.targetnormerpath):
 			logger.info("Copying target normer...")
-			shutil.copy(self.inputnormerpath, os.path.join(destdir, "target_normer.pkl"))
+			shutil.copy(self.targetnormerpath, os.path.join(destdir, "target_normer.pkl"))
+		
+		# And we write the config.
+		configcopypath = os.path.join(destdir, self.name + ".cfg")
+		with open(configcopypath, 'wb') as configfile:
+			self.config.write(configfile)
 		
 		logger.info("Done with minimizing.")
 
