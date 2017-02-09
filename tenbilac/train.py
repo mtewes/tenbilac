@@ -436,7 +436,7 @@ class Training:
 		starttime = datetime.now()
 		err = self.currentcost()
 		endtime = datetime.now()
-		took = (endtime - starttime).total_seconds()		
+		took = (endtime - starttime).total_seconds()
 		logger.info("On the training set:   {took:.4f} seconds, {self.errfctname} = {self.opterr:.8e}".format(self=self, took=took))
 		starttime = datetime.now()
 		err = self.valcost()

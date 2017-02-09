@@ -340,7 +340,7 @@ def outdistribs(train, filepath=None):
 
 		
 		# The MSRB terms:
-		thiso_valmsrbterms =valmsrbterms[io,:].flatten().compressed()
+		thiso_valmsrbterms = valmsrbterms[io,:].flatten().compressed()
 		thiso_trainmsrbterms = trainmsrbterms[io,:].flatten().compressed()
 		ax = plt.subplot(train.net.no, ncol, (io*ncol)+7)
 		ax.hist(thiso_valmsrbterms, bins=50, histtype="step", color="red", label="Validation set")

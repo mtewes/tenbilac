@@ -430,6 +430,8 @@ class Traindata:
 		if finalmbsize > nfulltrain:
 			raise RuntimeError("Cannot select {finalmbsize} among {nfulltrain}".format(finalmbsize=finalmbsize, nfulltrain=nfulltrain))
 		
+		if finalmbsize <= 0:
+			raise RuntimeError("Cannot select no sample!")
 		
 		logger.info("Randomly selecting new minibatch of {finalmbsize} (mbfrac={mbfrac}) among {nfulltrain} cases...".format(finalmbsize=finalmbsize, mbfrac=mbfrac, nfulltrain=nfulltrain))
 		caseindexes = np.arange(nfulltrain)
