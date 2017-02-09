@@ -350,7 +350,7 @@ def outdistribs(train, filepath=None):
 		try:
 			ax.set_yscale('log')
 		except:
-			logger.warning("Probably no reas, plot failed.")
+			logger.warning("Probably you have only one rea, this plot failed.")
 			plt.close()
 			return()
 		
