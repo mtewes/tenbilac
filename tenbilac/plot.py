@@ -347,8 +347,12 @@ def outdistribs(train, filepath=None):
 		ax.hist(thiso_trainmsrbterms, bins=50, histtype="step", color="black", label="Training batch")
 		ax.set_ylabel("Counts (cases)")
 		ax.set_xlabel("Relative biases of '{0}'".format(net.onames[io]))
-		ax.set_yscale('log')
-	
+		try:
+			ax.set_yscale('log')
+		except:
+			logger.warning("Probably you have only one rea, this plot failed.")
+			plt.close()
+			return()
 		
 		
 	plt.tight_layout()
