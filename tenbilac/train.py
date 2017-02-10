@@ -26,7 +26,7 @@ class Training:
 	"""
 
 	
-	def __init__(self, net, dat, errfctname="msb", regulweight=None, regulfctname=None, itersavepath=None, saveeachit=False, autoplotdirpath=".", autoplot=False, trackbiases=False, verbose=False, name=None):
+	def __init__(self, net, dat, errfctname="msb", regulweight=None, regulfctname=None, itersavepath=None, saveeachit=False, autoplotdirpath=".", autoplot=False, logpath=None, trackbiases=False, verbose=False, name=None):
 		"""
 
 		Sets up
@@ -36,8 +36,12 @@ class Training:
 		:param dat: can be None, if you want a dummy container for your Net.
 		
 		:param trackbiases: If True, will track and plot the evolution of biases as function of input feature values.
-			Could get massive and slow down the training. Also the plot is rather slow. 
+			Could get massive and slow down the training. Also the plot is rather slow.
 		:type trackbiases: bool
+		
+		:param logpath: If not None, I will log to this file, and not propagate my logger at all.
+			Unfortunately this does not work well when using multiple threads/processes,
+			as logs from every thread get written into the logfiles.
 		
 		:param saveeachit: If True, writes the full status and history to disk at each iteration.
 			If False, only some snapshots are written, but they still contain the full history!
@@ -45,6 +49,20 @@ class Training:
 		
 		
 		"""
+		
+		# We start by dealing with the logger.
+		if logpath is not None:
+			fh = logging.FileHandler(logpath, delay=True)
+			fh.setLevel(logging.DEBUG)
+			fh.setFormatter(logging.Formatter("PID %(process)d: %(levelname)s: %(name)s(%(funcName)s): %(message)s"))
+			logger.addHandler(fh)
+			logger.propagate = False
+			# Even if the file is only openend at the first message (delay=True in FileHandler above),
+			# we do have to make sure the directories exist, so that logging can be done at any time.
+			logpathdir = os.path.split(logpath)[0]
+			if not os.path.exists(logpathdir):
+				os.makedirs(logpathdir)
+			
 		
 		self.name = name
 	
