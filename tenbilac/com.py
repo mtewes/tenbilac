@@ -110,11 +110,18 @@ class Tenbilac():
 				os.makedirs(self.workdir)
 
 	def _activatefilelog(self):
+		"""
+		Activate the logging of all tenbilac to a file.
+		Note that only the method self.trian uses this so far.
+		"""
 		if self.config.getboolean("setup", "logtofile"):
 			self.logger.addHandler(self.logfilehandler)
 			self.logger.propagate = False
 	
 	def _deactivatefilelog(self):
+		"""
+		The problem: if a child method would call this, the logging-to-file would stop also for the parent calling the child.
+		"""
 		if self.config.getboolean("setup", "logtofile"):
 			self.logger.removeHandler(self.logfilehandler)
 			self.logger.propagate = True
@@ -395,7 +402,6 @@ class Tenbilac():
 		trainpaths = sorted(glob.glob(os.path.join(self.workdir, "member_*/Training.pkl")))
 		logger.info("Found {} committee members to read in...".format(len(trainpaths)))
 		self.committee = [utils.readpickle(trainpath) for trainpath in trainpaths]
-		self._deactivatefilelog()
 		return trainpaths # Potentially useful
 	
 	
