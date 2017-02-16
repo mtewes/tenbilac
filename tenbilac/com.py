@@ -34,6 +34,7 @@ from . import plot
 
 class Tenbilac():
 	
+	
 	def __init__(self, configpath, configlist=None):
 		"""Constructor, does not take a ton of arguments, just a path to a config file.
 		Alternatively, the configpath can also just point to a directory (typically an existing tenbilac workdir),
@@ -89,9 +90,42 @@ class Tenbilac():
 		# For easy access, we point to a few configuration items:
 		self.inputnormerpath = os.path.join(self.workdir, "input_normer.pkl")
 		self.targetnormerpath = os.path.join(self.workdir, "target_normer.pkl")
-	
+			
 		logger.info("Constructed Tenbilac '{self.name}' with workdir '{self.workdir}'.".format(self=self))
+		
+		# Now we take care of the logging, in a brutal way. The methods will redicrec all tenbilac log to a file.
+		# The code below only sets the logging up. It has to be activated and deactivated inside the methods.
+		# Did not yet find the optimal way of doing this (decorator as class method ?)
+		if self.config.getboolean("setup", "logtofile"):
+			self.logger = logging.getLogger("tenbilac")
+			logpath = os.path.join(self.workdir, "log.txt")
+			logger.info("Tenbilac is set to log to {}".format(logpath))
+			self.logfilehandler = logging.FileHandler(logpath, delay=True)
+			self.logfilehandler.setLevel(logging.DEBUG)
+			self.logfilehandler.setFormatter(logging.Formatter("PID %(process)d: %(levelname)s: %(name)s(%(funcName)s): %(message)s"))
+			
+			# Even if the file is only openend at the first message (delay=True in FileHandler above),
+			# we do have to make sure the directories exist, so that logging can be done at any time.
+			if not os.path.exists(self.workdir):
+				os.makedirs(self.workdir)
+
+	def _activatefilelog(self):
+		"""
+		Activate the logging of all tenbilac to a file.
+		Note that only the method self.trian uses this so far.
+		"""
+		if self.config.getboolean("setup", "logtofile"):
+			self.logger.addHandler(self.logfilehandler)
+			self.logger.propagate = False
 	
+	def _deactivatefilelog(self):
+		"""
+		The problem: if a child method would call this, the logging-to-file would stop also for the parent calling the child.
+		"""
+		if self.config.getboolean("setup", "logtofile"):
+			self.logger.removeHandler(self.logfilehandler)
+			self.logger.propagate = True
+
 	def __str__(self):
 		return "Tenbilac '{self.name}'".format(self=self)
 			
@@ -115,7 +149,9 @@ class Tenbilac():
 		
 		# Can be used to save files at the level of this wrapper.
 		startdt = datetime.datetime.now()
-			
+		
+		self._activatefilelog()
+		
 		# For this wrapper, we only allow 3D inputs and 2D targets.
 		if (inputs.ndim) != 3 or (targets.ndim) != 2:
 			raise ValueError("This wrapper only accepts 3D inputs and 2D targets, you have {} and {}".format(inputs.shape, targets.shape))
@@ -125,6 +161,7 @@ class Tenbilac():
 			logger.info("The workdir already exists.")
 		else:
 			logger.info("The workdir does not exist, it will be created.")
+		
 		
 		# Creating the normers and norming, if desired
 		writeinputnormer = False # Should the new normers be written to disk, later?
@@ -207,7 +244,6 @@ class Tenbilac():
 			trainobjpath = os.path.join(trainobjdir, "Training.pkl")
 			plotdirpath = os.path.join(trainobjdir, "plots")
 			
-			
 			# Let's see if an existing training is available in these directories:
 			oldtrainobj = None
 			if self.config.getboolean("train", "takeover") and os.path.exists(trainobjpath):
@@ -231,6 +267,7 @@ class Tenbilac():
 				saveeachit=self.config.getboolean("train", "saveeachit"),
 				autoplotdirpath=plotdirpath,
 				autoplot=self.config.getboolean("train", "autoplot"),
+				logpath=None, # Does not work well with multi-cpu, unfortunately.
 				trackbiases=self.config.getboolean("train", "trackbiases"),
 				verbose=self.config.getboolean("train", "verbose"),
 				name='{}_{}'.format(self.name, i)
@@ -355,7 +392,8 @@ class Tenbilac():
 		# We close with a summary of the results
 		self.summary()
 	
-	
+		self._deactivatefilelog()
+
 	def _readmembers(self):
 		"""
 		A method that finds available committee members by itself, exploring the file system, and reads them in.
@@ -371,6 +409,7 @@ class Tenbilac():
 		"""
 		Summarizes the training performance of committee members.
 		"""
+		
 		self._readmembers()
 		
 		# First we just write some log info, to demonstrate the idea:
@@ -390,6 +429,7 @@ class Tenbilac():
 				os.makedirs(plotsdirpath)
 			
 			plot.summaryerrevo(self.committee, filepath=os.path.join(plotsdirpath, "summaryerrevo.png"))
+		
 
 	
 	def minimize(self, destdir=None, dt=None):

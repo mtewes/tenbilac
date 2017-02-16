@@ -22,7 +22,7 @@ def bfgs(training, maxiter=100, gtol=1e-8, **kwargs):
 			training.cost, training.params[training.paramslice],
 			fprime=None,
 			maxiter=maxiter, gtol=gtol,
-			full_output=True, disp=True, retall=False, callback=training.callback, **kwargs)
+			full_output=True, disp=False, retall=False, callback=training.callback, **kwargs)
 		
 	if len(optres) == 7:
 		(xopt, fopt, gopt, Bopt, func_calls, grad_calls, warnflag) = optres
