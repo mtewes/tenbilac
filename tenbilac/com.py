@@ -413,15 +413,8 @@ class Tenbilac():
 		self._readmembers()
 		
 		# First we just write some log info, to demonstrate the idea:
-		for trainobj in self.committee:
-			nit = trainobj.optit
-			assert nit == len(trainobj.optiterrs_train)
-			assert nit == len(trainobj.optiterrs_val)
-			trainerr = trainobj.optiterrs_train[-1]
-			valerr = trainobj.optiterrs_val[-1]
-			valerrratio = valerr / trainerr
-			logger.info("{:>20}: {:5d} iterations, train = {:.6e}, val = {:.6e} ({:4.1f})".format(trainobj.name, nit, trainerr, valerr, valerrratio))
-	
+		trainlistsummary(self.committee)
+		
 		# And we create a plot
 		if self.config.getboolean("train", "autoplot"):
 			plotsdirpath = os.path.join(self.workdir, "plots")
@@ -466,6 +459,13 @@ class Tenbilac():
 			net = trainobj.net
 			net.resetcache()
 			tinytrainobj = train.Training(net, None, name=trainobj.name)
+			
+			# To be able to select the best members later, we copy only the required stuff:
+			tinytrainobj.optiterrs_val.append(trainobj.optiterrs_val[-1])
+			tinytrainobj.optiterrs_train.append(trainobj.optiterrs_train[-1])
+			tinytrainobj.optit = trainobj.optit
+			
+			# And save it
 			tinytrainobj.save(memberdestfilepath)
 			
 		# We also copy the normers
@@ -493,7 +493,31 @@ class Tenbilac():
 		self._readmembers()
 		
 		
-		# Here comes code to select members
+		if self.config.getboolean("predict", "selbest"):
+			bestn = self.config.getint("predict", "bestn")
+			logger.info("Selecting {} best members among {}.".format(bestn, len(self.committee)))
+			
+			# We build a function to identify the best members
+			bestkey = self.config.get("predict", "bestkey")
+			if bestkey == "valerr":
+				key = lambda trainobj: trainobj.optiterrs_val[-1]
+			elif bestkey == "trainerr":
+				key = lambda trainobj: trainobj.optiterrs_train[-1]
+			elif bestkey == "nit":
+				key = lambda trainobj: -1.0 * trainobj.optit # times minus one get the order right
+			else:
+				raise ValueError("Unknown bestkey")
+			
+			logger.info("All potential committee members:")
+			trainlistsummary(self.committee)
+			
+			self.committee = sorted(self.committee, key=key)[0:bestn]
+		
+			logger.info("Retained committee members:")
+			trainlistsummary(self.committee)
+				
+		else:	
+			logger.info("Keeping all members")
 		
 		
 		# We norm the inputs
@@ -520,9 +544,8 @@ class Tenbilac():
 		# And average the results
 		logger.info("{}: Building predictions array...".format(str(self)))
 		predsarray = np.array(predslist)
+		logger.info("Prediction shape is {}".format(predsarray.shape))
 		assert predsarray.shape[0] == len(self.committee)
-		
-		
 		
 		
 		combine = self.config.get("predict", "combine")
@@ -536,6 +559,21 @@ class Tenbilac():
 		logger.info("{}: Done with averaging.".format(str(self)))
 		return retarray
 		
+
+
+def trainlistsummary(trainlist):
+	"""
+	Logs a summary table describing a list of Training objects
+	"""
+	for trainobj in trainlist:
+		nit = trainobj.optit
+		#assert nit == len(trainobj.optiterrs_train)   # No, we don't need this, and it doesn't hold for minimized Trainings
+		#assert nit == len(trainobj.optiterrs_val)
+		trainerr = trainobj.optiterrs_train[-1]
+		valerr = trainobj.optiterrs_val[-1]
+		valerrratio = valerr / trainerr
+		logger.info("{:>20}: {:5d} iterations, train = {:.6e}, val = {:.6e} ({:4.1f})".format(trainobj.name, nit, trainerr, valerr, valerrratio))
+
 
 
 def datetimestr(dt):
