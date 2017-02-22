@@ -11,7 +11,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def mse(predictions, targets, auxinputs=None):
+	"""
+	Standard MSE (mean square error), simply treats multiple realizations as if they were independent cases	
+	
+	:param predictions: 2D array (neuron, case) or 3D array (realization, neuron, case)
+	:param targets: 2D array (neuron, case)
 
+	"""
+	
+	# This same code works for 2D or 3D predictions:
+	return np.mean(np.square(predictions - targets))
+
+	
 	
 def msb(predictions, targets, auxinputs=None):
 	"""
@@ -31,6 +43,8 @@ def msb(predictions, targets, auxinputs=None):
 		raise ValueError("Wrong pred shape")
 
 
+
+
 def mab(predictions, targets, auxinputs=None):
 	"""
 	Mean absolute bias
@@ -48,6 +62,37 @@ def mab(predictions, targets, auxinputs=None):
 	else:
 		raise ValueError("Wrong pred shape")
 
+
+def msbwsignorm(predictions, targets, auxinputs):
+	"""
+	Weighted mean square bias of the auxinputs, where weights are obtained form predictions (use a sigmoid last layer!),
+	and the weighting is normalized.
+	
+	We do NOT normalize the weighted average auxinputs
+	"""
+	
+	if auxinputs is None:
+		raise RuntimeError("This error function needs auxinputs.")
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	weights = predictions
+	biases = np.mean(auxinputs * weights, axis=0) / np.mean(weights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+			
+	return np.mean(np.square(biases)) #+ np.square(np.max(predictions) - 1.0)
+
+
+
+
+
+
+########## Below this line, things get experimental and might not make sense
 
 
 	
@@ -92,22 +137,6 @@ def msrb(predictions, targets, auxinputs=None, rawterms=False):
 		raise ValueError("Wrong pred shape")
 	
 	
-
-
-def mse(predictions, targets, auxinputs=None):
-	"""
-	Standard MSE (mean square error), simply treats multiple realizations as if they were independent cases	
-	
-	:param predictions: 2D array (neuron, case) or 3D array (realization, neuron, case)
-	:param targets: 2D array (neuron, case)
-
-	"""
-	
-	# This same code works for 2D or 3D predictions:
-	return np.mean(np.square(predictions - targets))
-	
-	#return np.mean(np.square(net.run(inputs[0]) - targets))
-
 
 
 def msre(predictions, targets, auxinputs=None):
@@ -272,10 +301,6 @@ def msbwinvsquare(predictions, targets, auxinputs):
 	biases = np.mean(auxinputs * predweights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
 		
 	return np.mean(np.square(biases))
-
-
-
-
 
 
 

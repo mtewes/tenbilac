@@ -130,7 +130,7 @@ class Tenbilac():
 		return "Tenbilac '{self.name}'".format(self=self)
 			
 
-	def train(self, inputs, targets, inputnames=None, targetnames=None):
+	def train(self, inputs, targets, inputnames=None, targetnames=None, auxinputs=None):
 		"""
 		Make and save normers
 		Norm data with new normers
@@ -192,7 +192,7 @@ class Tenbilac():
 		
 		# And grouping them into a Traindata object:
 		self.traindata = data.Traindata(
-			inputs, targets, auxinputs=None,
+			inputs, targets, auxinputs=auxinputs,
 			valfrac=self.config.getfloat("train", "valfrac"),
 			shuffle=self.config.getboolean("train", "shuffle")
 			)
