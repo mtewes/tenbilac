@@ -304,33 +304,6 @@ def msbwinvsquare(predictions, targets, auxinputs):
 
 
 
-
-def msbwsignorm(predictions, targets, auxinputs):
-	"""
-	Weighted mean square bias of the auxinputs, where weights are obtained form predictions (use a sigmoid last layer!),
-	and the weighting is normalized.
-	
-	We do NOT normalize the weighted average auxinputs
-	"""
-	
-	if auxinputs is None:
-		raise RuntimeError("This error function needs auxinputs.")
-	
-	assert predictions.ndim == 3
-	assert auxinputs.ndim == 3
-	assert targets.ndim == 2
-	
-	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
-	assert auxinputs.shape[1] == nt
-	assert predictions.shape[1] == nt 
-	
-	weights = predictions
-	biases = np.mean(auxinputs * weights, axis=0) / np.mean(weights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
-			
-	return np.mean(np.square(biases)) #+ np.square(np.max(predictions) - 1.0)
-
-
-
 def msbwsig(predictions, targets, auxinputs):
 	"""
 	Similar as msbw, but we do not use this dangerous power of 10, and we do not normalize the weights at training
