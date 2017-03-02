@@ -543,7 +543,7 @@ class Tenbilac():
 		
 		# And average the results
 		logger.info("{}: Building predictions array...".format(str(self)))
-		predsarray = np.array(predslist)
+		predsarray = np.ma.array(predslist)
 		logger.info("Prediction shape is {}".format(predsarray.shape))
 		assert predsarray.shape[0] == len(self.committee)
 		
