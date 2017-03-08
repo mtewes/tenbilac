@@ -10,23 +10,23 @@ logger = logging.getLogger(__name__)
 def sig(x):
 	return 1.0 / (1.0 + np.exp(-x))	# The actual sigmoid
 	
+def sigi(x):
+	return 1.0 / (1.0 + np.exp(-x*4.0))	# A sigmoid with a central slope of 1
 			
 def sige(x):
-	return 2.0 / (1.0 + np.exp(-x)) - 1.0	# Making it even
+	return 2.0 / (1.0 + np.exp(-x)) - 1.0 # Making it even
 		
-
 def tanh(x):
 	return np.tanh(x)
-	
 	
 def iden(x):
 	return x
 
-def relu6(x):
-	return np.amin([np.amax([x, np.zeros_like(x)], axis=0), 6 * np.ones_like(x)], axis=0)
-
 def relu(x):
 	return np.amax([x, np.zeros_like(x)], axis=0)
+
+def relu6(x):
+	return np.amin([np.amax([x, np.zeros_like(x)], axis=0), 6 * np.ones_like(x)], axis=0)
 
 
 if __name__ == "__main__":
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 	import matplotlib.pyplot as plt
 	
 	x = np.linspace(-5, 5, 1000)
-	acts = [sig, sige, tanh, iden, relu]
+	acts = [sig, sigi, sige, tanh, iden, relu]
 	
 	for act in acts:
 		plt.plot(x, act(x), label=act.__name__)
