@@ -42,3 +42,37 @@ def readpickle(filepath):
 	pkl_file.close()
 	logger.info("Read %s" % filepath)
 	return obj
+
+def sigma_clip_plus(arr, maxdev, get_indices=False):
+	"""
+	Removes iteratively all points that are upwards of 
+
+		mean(arr) + maxdev * std(arr)
+
+	:param arr: a numpy array (1D) containing the data points.
+	:param maxdev: maximum allowed deviation
+	:param get_indices: if True returns arr, keys otherwise just keys
+	"""
+
+	lenp = 1
+	lena = 0
+
+	keys = np.arange(len(arr))
+	arr = np.asarray(arr)
+
+	while lenp > lena:
+		_thr = np.mean(arr) + maxdev * np.std(arr)
+		lenp = np.size(arr)
+		sel = arr < _thr
+		keys = keys[sel]
+		arr = arr[sel]
+		
+		if np.size(arr) == 1:
+			break
+
+		lena = np.size(arr)
+
+	if get_indices:
+		return arr, keys
+	else:
+		return arr

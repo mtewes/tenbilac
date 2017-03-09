@@ -494,8 +494,16 @@ class Tenbilac():
 		
 		
 		if self.config.getboolean("predict", "selbest"):
-			bestn = self.config.getint("predict", "bestn")
-			logger.info("Selecting {} best members among {}.".format(bestn, len(self.committee)))
+			
+			
+			if self.config.get("predict", "selkind") == "bestn":
+				thr = self.config.getint("predict", "thr")
+				logger.info("Selecting {} best members among {}.".format(thr, len(self.committee)))
+			elif self.config.get("predict", "selkind") == "sigmaclip":
+				thr = self.config.getfloat("predict", "thr")
+				logger.info("Sigma clipping to select the members. Selecting under {}sigma among {}.".format(thr, len(self.committee)))
+			else:
+				raise ValueError("Unknown member selection procedure")
 			
 			# We build a function to identify the best members
 			bestkey = self.config.get("predict", "bestkey")
@@ -505,13 +513,25 @@ class Tenbilac():
 				key = lambda trainobj: trainobj.optiterrs_train[-1]
 			elif bestkey == "nit":
 				key = lambda trainobj: -1.0 * trainobj.optit # times minus one get the order right
+			elif bestkey == "random":
+				key = np.arange(len(self.committee))
+				np.random.shuffle(key)
+				for m, rid in zip(self.committee, key):
+					m._rid = rid
+				key = lambda trainobj: trainobj._rid
 			else:
 				raise ValueError("Unknown bestkey")
-			
 			logger.info("All potential committee members:")
 			trainlistsummary(self.committee)
 			
-			self.committee = sorted(self.committee, key=key)[0:bestn]
+			if self.config.get("predict", "selkind") == "bestn":
+				self.committee = sorted(self.committee, key=key)[0:thr]
+			elif self.config.get("predict", "selkind") == "sigmaclip":
+				keys = [key(mem) for mem in self.committee]
+				_, ikeys = utils.sigma_clip_plus(keys, thr, get_indices=True)
+				self.committee = [self.committee[i] for i in ikeys]
+				logger.info("Sigma clipping to select the members. Selected {} members under {}sigma.".format(len(self.committee), thr))
+			
 		
 			logger.info("Retained committee members:")
 			trainlistsummary(self.committee)
@@ -546,8 +566,7 @@ class Tenbilac():
 		predsarray = np.ma.array(predslist)
 		logger.info("Prediction shape is {}".format(predsarray.shape))
 		assert predsarray.shape[0] == len(self.committee)
-		
-		
+
 		combine = self.config.get("predict", "combine")
 		if combine == "mean":
 			retarray = np.mean(predsarray, axis=0)
@@ -555,7 +574,7 @@ class Tenbilac():
 			retarray = np.median(predsarray, axis=0)
 		else:
 			raise ValueError("Unknown combine")
-		
+
 		logger.info("{}: Done with averaging.".format(str(self)))
 		return retarray
 		
