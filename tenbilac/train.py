@@ -72,7 +72,7 @@ class Training:
 		# Let's check compatibility between those two!
 		if dat != None:
 			assert net.ni == self.dat.getni()
-			if errfctname in ["mse", "msb", "msrb", "msre", "msbw"]:
+			if errfctname in ["mse", "msb", "msrb", "msre", "msbw", "msbwsignorm"]:
 				assert net.no == self.dat.getno()
 			elif errfctname in ["msbwnet"]:
 				assert net.no == 2*self.dat.getno()
