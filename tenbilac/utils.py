@@ -66,11 +66,10 @@ def sigma_clip_plus(arr, maxdev, get_indices=False):
 		sel = arr < _thr
 		keys = keys[sel]
 		arr = arr[sel]
-		
-		if np.size(arr) == 1:
-			break
-
 		lena = np.size(arr)
+		
+		if lena == 1:
+			break
 
 	if get_indices:
 		return arr, keys
