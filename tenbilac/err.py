@@ -89,6 +89,27 @@ def msbwsignorm(predictions, targets, auxinputs):
 
 
 
+def mabwsignorm(predictions, targets, auxinputs):
+	"""
+	Same as msbwsignorm, but with L1 norm.
+	"""
+	
+	if auxinputs is None:
+		raise RuntimeError("This error function needs auxinputs.")
+	
+	assert predictions.ndim == 3
+	assert auxinputs.ndim == 3
+	assert targets.ndim == 2
+	
+	nt = targets.shape[0] # the number of targets = number of "predicted weights" = number of aux inputs (per case)
+	assert auxinputs.shape[1] == nt
+	assert predictions.shape[1] == nt 
+	
+	weights = predictions
+	biases = np.mean(auxinputs * weights, axis=0) / np.mean(weights, axis=0) - targets # The mean is done along realizations, so this is 2D, (label, case)
+			
+	return np.mean(np.fabs(biases)) #+ np.square(np.max(predictions) - 1.0)
+
 
 
 
