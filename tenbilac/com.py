@@ -498,7 +498,7 @@ class Tenbilac():
 			
 			if self.config.get("predict", "selkind") == "bestn":
 				thr = self.config.getint("predict", "thr")
-				logger.info("Selecting {} best members among {}.".format(thr, len(self.committee)))
+				logger.info("Selecting {} best members among {}, using criterion '{}'.".format(thr, len(self.committee), self.config.get("predict", "bestkey")))
 			elif self.config.get("predict", "selkind") == "sigmaclip":
 				thr = self.config.getfloat("predict", "thr")
 				logger.info("Sigma clipping to select the members. Selecting under {}sigma among {}.".format(thr, len(self.committee)))
