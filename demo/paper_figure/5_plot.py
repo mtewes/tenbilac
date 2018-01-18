@@ -68,7 +68,7 @@ ax.plot(mod_train_params, mod_train_obs, marker=".", color="gray", ls="None", ms
 ax.plot(test_preds_mse.T, test_obs.T, "r-", label="Trained with MSE", lw=1.5)
 ax.plot(test_preds_avg.T, test_obs.T, "b-", label=r"Trained on $\langle d \rangle$", lw=1.5)
 ax.plot(test_preds_msb.T, test_obs.T, "g-", label="Trained with MSB", lw=1.5)
-ax.plot(trutheta, trud, "r-", color="black", dashes=(5, 5), lw=1.5, label=r"$d = \sqrt{1 + \theta^2}$ (truth)")
+ax.plot(trutheta, trud, "r-", color="black", dashes=(5, 5), lw=1.5, label=r"$d = \sqrt{1 + \theta^2}$")
 ax.set_xlabel(r"$\theta$ $\mathrm{and}$ $\hat{\theta}$", fontsize=18)
 ax.set_ylabel(r"$d$", fontsize=18)
 ax.set_xlim(-1.2, 2.4)
