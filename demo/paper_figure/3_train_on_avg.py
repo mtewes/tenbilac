@@ -14,7 +14,7 @@ avg_normed_train_obs = np.mean(data["normed_train_obs"], axis=0).reshape(1, 1, d
 
 traindata = tenbilac.data.Traindata(avg_normed_train_obs, data["normed_train_params"], valfrac=0.5, shuffle=True)
 
-net = tenbilac.net.Net(1, [7])
+net = tenbilac.net.Net(1, [5])
 net.setidentity()
 net.addnoise(wscale=0.1, bscale=0.1)
 

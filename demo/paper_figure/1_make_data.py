@@ -23,7 +23,7 @@ train_ncase = 1000 # Number of cases (i.e., number of parameters "theta")
 train_nrea = 1000 # How many realizations per case (i.e., "observations" per parameter).
 noise_scale = 0.1
 # The explanatory variables:
-train_params = np.linspace(0.0, 2.0, train_ncase).reshape((1, train_ncase))
+train_params = np.linspace(0.25, 2.0, train_ncase).reshape((1, train_ncase))
 # And the corresponding observations of the dependt variable:
 train_obs = np.array([f(train_params) + noise_scale*noise(train_ncase).reshape((1, train_ncase)) for rea in range(train_nrea)])
 
@@ -31,7 +31,7 @@ train_obs = np.array([f(train_params) + noise_scale*noise(train_ncase).reshape((
 # To study bias afterwards, we make a "validation" set.
 val_ncase = 1000
 val_nrea = 1000
-val_params = np.linspace(0.0, 2.0, val_ncase).reshape((1, val_ncase))
+val_params = np.linspace(0.25, 2.0, val_ncase).reshape((1, val_ncase))
 val_obs = np.array([f(val_params) + noise_scale*noise(val_ncase).reshape((1, val_ncase)) for rea in range(val_nrea)])
 
 

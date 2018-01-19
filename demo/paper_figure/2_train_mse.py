@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 data = tenbilac.utils.readpickle("data.pkl")
 
 
-net = tenbilac.net.Net(1, [7])
+net = tenbilac.net.Net(1, [5])
 net.setidentity()
 net.addnoise(wscale=0.1, bscale=0.1)
 
