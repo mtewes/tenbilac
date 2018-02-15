@@ -679,16 +679,17 @@ def summaryerrevo(committee, filepath=None, ax=None):
 		color = next(coloriter)
 		ax.plot(optits, optiterrs_train, ls="-", color=color, label="'{}': {:.2e} ({:.1f})".format(
 			trainobj.name, trainerr, valerrratio))
-		ax.plot(optits, optiterrs_val, ls="--", color=color) # No label for the validation
+		ax.plot(optits, optiterrs_val, ls=":", color=color) # No label for the validation
 
-		
-	ax.set_yscale('log')
-	#ax.set_xscale('log')
-	ax.set_xlabel("Iteration")
-	#ax.set_xlim((optits[0], optits[-1]))
-	ax.set_ylabel("Cost function value")
-	ax.legend()
-	#ax.set_title(train.title())
+	
+	if fig is not None:
+		ax.set_yscale('log')
+		#ax.set_xscale('log')
+		ax.set_xlabel("Iteration")
+		#ax.set_xlim((optits[0], optits[-1]))
+		ax.set_ylabel("Cost function value")
+		ax.legend()
+		#ax.set_title(train.title())
 
 
 	if fig is not None:
