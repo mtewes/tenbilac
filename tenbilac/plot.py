@@ -662,7 +662,7 @@ def summaryerrevo(committee, filepath=None, ax=None):
 	committee = sorted(committee, key=lambda trainobj: trainobj.optiterrs_train[-1], reverse=True)
 	
 	logger.info("Preparing summary plot with {} members...".format(len(committee)))
-	coloriter=iter(plt.cm.jet(np.linspace(0,1,len(committee))))
+	coloriter=iter(plt.cm.plasma_r(np.linspace(0,1,len(committee))))
 		
 	for trainobj in committee:
 
