@@ -162,7 +162,7 @@ def sumevo(train, filepath=None, showtimes=True):
 	ax = plt.subplot(2, 1, 2)
 	paramsevo(ax, train, wnetpart=None)
 	
-	plt.tight_layout()
+	#plt.tight_layout()
 	if filepath is None:
 		plt.show()	
 	else:
