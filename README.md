@@ -1,18 +1,31 @@
 Tenbilac
 ========
 
+Tenbilac is a simple and exploratory feedforward neural network library that is designed to yield accurate regressions despite noisy input features. Exploiting some special structure of the training data, the network can be trained to minimize _bias_ instead of _error_. This is useful to solve *inverse regression* problems (aka "[calibration problems](https://en.wikipedia.org/wiki/Calibration_(statistics))" of regression.
+
+Note that this implementation is a demonstration more than an optimized library: it uses numpy and purely numerical differentiation,
+
+For an introduction to the algorithm, see Section 3 and Appendix A of the related paper: https://arxiv.org/abs/1807.02120
 
 ![Demo figure](/demo/paper_figure/paper_figure.png)
+
+Some technical features of tenbilac are:
+- in the learning phase, it "experiences" many realizations of each training case in order to probe bias
+- it offers several cost functions, including functions to predict weights for the input realizations
+- it handles _masked_ numpy arrays, to accomodate for missing data
+- (experimental) it offers "product units" (Durbin & Rumelhart 1989; Schmitt 2002) i.e. nodes that can take products and powers of their inputs
+- it has an interface to directly train committees of networks (each member on one cpu)
 
 
 Installation
 ------------
 
-We recommend to simply add the location of your clone of this directory to your PYTHONPATH.
+You could ``python setup.py install`` this, but given that this code is quite experimental,
+we recommend to simply add the location of your clone of this directory to your PYTHONPATH.
 
 To do so, if you use bash, add this line to your ``.bash_profile`` or ``.profile`` or equivalent file:
 
-	export PYTHONPATH=${PYTHONPATH}:/path/to/momentsml/
+	export PYTHONPATH=${PYTHONPATH}:/path/to/tenbilac/
 
 
 
@@ -25,32 +38,4 @@ Directory structure
 
 Tutorial
 --------
-
-
-
-
-
-
-- You have noisy multivariate data, which depend on some (physical) explanatory parameters.
-- Given the data, you want to get *accurate* estimates for those parameters.
-- It seems hard or impossible to write down any likelihood function for your data, say because the measurement process is very involved and/or depends on too many nuisance parameters.
-- But you are able to simulate the data (including the noise) rather easily, given the explanatory parameters.
-
-Then Tenbilac should give you a fast and fully empirical point or interval estimator, tuned to minimize bias, no matter how crazy the noise in your data is. Even in 20 dimensions. **That's the plan.** The following figure, corresponding to the ``demo/size`` of Tenbilac, illustrates this in a 1D situation.
-
-.. image:: https://raw.githubusercontent.com/mtewes/tenbilac/master/sphinx/_static/tenbilac.png
-	:align: center
-	:alt: alternate text
-
-Warning: this is undocumented **work in progress**! You're welcome to contact me if interested or if you have any comments, but don't expect anything useable in here for now.
-
-
-About
------
-
-Tenbilac is a python package implementing an (experiemental) feedforward neural network designed to solve an *inverse regression* problem (aka "calibration problem" of regression, see `wikipedia <https://en.wikipedia.org/wiki/Calibration_(statistics)>`_). It performs a supervised machine learning regression from a noisy feature space to a well known explanatory space, and can be trained to minimize *bias* instead of error in this explanatory space.
-
-Despite some research, I could not find an implementation of such a "thing", so here it is. But why code this from scratch instead of using an existing neural network library ? The training is sufficiently different from what is done with normal ANNs, as tenbilac has to "experience" many realizations of each training case in order to probe bias. Another key feature of Tenbilac is that it can be efficiently trained with **masked numpy arrays** to accomodate that some realizations of a training case might be missing. To simplify bookkeeping, to get more freedom in the design of the error function, and also to aim for a robust behavior (committees will have to be done anyway...), tenbilac uses black-box optimizers without back-propagation for gradient computation (for now).
-
-Note that tenbilac is far from the "deep" learning regime! The regressions that this network should perform are relatively simple. Typical architecture would be 5 to 10 input features, 2 hidden layers of 10 nodes each, and one output. But one could well use tenbilac to calibrate the outputs of a deep learning machine, if dimensionality is a concern.
 
