@@ -1,11 +1,11 @@
 Tenbilac
 ========
 
-Tenbilac is a simple and exploratory feedforward neural network library that is designed to yield statistically _accurate_ regressions despite noisy input features. Given a special structure of the training data, the network can be trained to minimize _bias_ instead of _error_. This is useful to solve *inverse regression* problems (aka "[calibration problems](https://en.wikipedia.org/wiki/Calibration_(statistics))" of regression.
+Tenbilac is a simple and exploratory feedforward neural network library that is designed to yield statistically _accurate_ regressions despite noisy input features. Given a special structure of the training data, the network can be trained to minimize _bias_ instead of _error_. This is useful to solve *inverse regression* problems (aka "[calibration problems](https://en.wikipedia.org/wiki/Calibration_(statistics))" of regression).
 
 Note that the present implementation is a demonstration more than an optimized library: it is based on numpy and purely numerical differentiation with scipy.optimize.
 
-For an introduction to the algorithm, see Section 3 and Appendix A of the related paper: [ArXiv:1807:02120](https://arxiv.org/abs/1807.02120).
+For an introduction to the algorithm, see Section 3 and Appendix A of the related paper: [arXiv:1807:02120](https://arxiv.org/abs/1807.02120).
 
 Some technical features of tenbilac are:
 - in the learning phase, it "experiences" many realizations of each training case in order to probe bias
