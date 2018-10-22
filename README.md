@@ -41,6 +41,6 @@ The documented code in ``demo/paper_figure`` serves as an example to run the bas
 
 ![Demo figure](/demo/paper_figure/paper_figure.png)
 
-For the more advanced interface (reading config files, saving training output etc), see the demonstration in ``demo/com_interface``.
+For the more advanced interface (reading config files, restarting from previous trainings, etc), see the demonstration in ``demo/com_interface``.
 
  

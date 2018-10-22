@@ -8,10 +8,11 @@ logging.basicConfig(level=logging.INFO)
 
 data = tenbilac.utils.readpickle("data.pkl")
 
-
+# We create a network, with one hidden layer containing only 5 nodes:
 net = tenbilac.net.Net(1, [5])
 net.setidentity()
 net.addnoise(wscale=0.1, bscale=0.1)
+
 
 traindata = tenbilac.data.Traindata(data["normed_train_obs"], data["normed_train_params"], valfrac=0.5, shuffle=True)
 
