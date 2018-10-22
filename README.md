@@ -5,7 +5,7 @@ Tenbilac is a simple and exploratory feedforward neural network library that is 
 
 Note that the present implementation is a demonstration more than an optimized library: it is based on numpy and purely numerical differentiation with scipy.optimize.
 
-For an introduction to the algorithm, see Section 3 and Appendix A of the related paper: [arXiv:1807:02120](https://arxiv.org/abs/1807.02120).
+For a description to the algorithm and further references, see Section 3 and Appendix A of the related paper: [arXiv:1807:02120](https://arxiv.org/abs/1807.02120).
 
 Some technical features of tenbilac are:
 - in the learning phase, it "experiences" many realizations of each training case in order to probe bias
