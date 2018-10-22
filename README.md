@@ -37,6 +37,6 @@ Directory structure
 Tutorial
 --------
 
-The documented code in ``demo/paper_figure`` serves as an example to run the basic features of tenbilac. It first generates some training data in form of noisy observations that depend on an explanatory variable. It then performs inverse regressions of the explanatory variable given noisy observations. By training against the _Mean Square Bias_ (MSB) cost function the results are much more accurate than with the conventional mean square error (MSE).
+The documented code in ``demo/paper_figure`` serves as an example to run the basic features of tenbilac. It first generates some training data in form of noisy observations _d_ that depend on an explanatory variable theta. It then performs inverse regressions of the explanatory variable given noisy observations. By training against the _Mean Square Bias_ (MSB) cost function the results are much more accurate than with the conventional mean square error (MSE).
 
 ![Demo figure](/demo/paper_figure/paper_figure.png)
