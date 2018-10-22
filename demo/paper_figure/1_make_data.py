@@ -1,5 +1,5 @@
 """
-Demo to make "the figure"
+Demo corresponding to Appendix 1 of our paper (https://arxiv.org/abs/1807.02120)
 """
 
 import numpy as np
@@ -10,18 +10,31 @@ logging.basicConfig(level=logging.INFO)
 
 #np.random.seed(0)
 
+# We define the noise distribution:
 def noise(n):
 	return np.random.randn(n)
 	#return 0.1*(np.exp(0.4*np.random.randn(n)) - 0.7)
-	
+
+# And the function behind the data:
 def f(x):
 	return np.sqrt(1.0 + x**2)
 
 
-# The data that will be used for training (to make it faster, reduce number of cases...)
+# Amount of data that will be used for training (to make it faster, reduce number of cases...)
 train_ncase = 1000 # Number of cases (i.e., number of parameters "theta")
 train_nrea = 1000 # How many realizations per case (i.e., "observations" per parameter).
 noise_scale = 0.1
+
+
+# Now we  generate the data, in form of numpy arrays (we don't use masked arrays here, but we could, if needed).
+# Important general note for using tenbilac:
+# - the *input* data (called here "obs", or "d") has to be 3D. 
+#   The indices are: (realization, node of the input layer, case)
+# - the *target* data (called here "params", or "theta") has to be 2D
+#   The indices are: (node of the output layer, case)
+# For the present example, we will use a network with only one input node, and only one output node.
+
+
 # The explanatory variables:
 train_params = np.linspace(0.25, 2.0, train_ncase).reshape((1, train_ncase))
 # And the corresponding observations of the dependt variable:
