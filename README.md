@@ -1,6 +1,36 @@
 Tenbilac
 ========
 
+
+![Demo figure](/demo/paper_figure/paper_figure.png)
+
+
+Installation
+------------
+
+We recommend to simply add the location of your clone of this directory to your PYTHONPATH.
+
+To do so, if you use bash, add this line to your ``.bash_profile`` or ``.profile`` or equivalent file:
+
+	export PYTHONPATH=${PYTHONPATH}:/path/to/momentsml/
+
+
+
+Directory structure
+-------------------
+
+- **tenbilac**: the python package
+- **demo**: some demos and test scripts
+
+
+Tutorial
+--------
+
+
+
+
+
+
 - You have noisy multivariate data, which depend on some (physical) explanatory parameters.
 - Given the data, you want to get *accurate* estimates for those parameters.
 - It seems hard or impossible to write down any likelihood function for your data, say because the measurement process is very involved and/or depends on too many nuisance parameters.
