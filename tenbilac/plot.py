@@ -162,7 +162,7 @@ def sumevo(train, filepath=None, showtimes=True):
 	ax = plt.subplot(2, 1, 2)
 	paramsevo(ax, train, wnetpart=None)
 	
-	plt.tight_layout()
+	#plt.tight_layout()
 	if filepath is None:
 		plt.show()	
 	else:
@@ -662,7 +662,7 @@ def summaryerrevo(committee, filepath=None, ax=None):
 	committee = sorted(committee, key=lambda trainobj: trainobj.optiterrs_train[-1], reverse=True)
 	
 	logger.info("Preparing summary plot with {} members...".format(len(committee)))
-	coloriter=iter(plt.cm.jet(np.linspace(0,1,len(committee))))
+	coloriter=iter(plt.cm.plasma_r(np.linspace(0,1,len(committee))))
 		
 	for trainobj in committee:
 
@@ -679,16 +679,17 @@ def summaryerrevo(committee, filepath=None, ax=None):
 		color = next(coloriter)
 		ax.plot(optits, optiterrs_train, ls="-", color=color, label="'{}': {:.2e} ({:.1f})".format(
 			trainobj.name, trainerr, valerrratio))
-		ax.plot(optits, optiterrs_val, ls="--", color=color) # No label for the validation
+		ax.plot(optits, optiterrs_val, ls=":", color=color) # No label for the validation
 
-		
-	ax.set_yscale('log')
-	#ax.set_xscale('log')
-	ax.set_xlabel("Iteration")
-	#ax.set_xlim((optits[0], optits[-1]))
-	ax.set_ylabel("Cost function value")
-	ax.legend()
-	#ax.set_title(train.title())
+	
+	if fig is not None:
+		ax.set_yscale('log')
+		#ax.set_xscale('log')
+		ax.set_xlabel("Iteration")
+		#ax.set_xlim((optits[0], optits[-1]))
+		ax.set_ylabel("Cost function value")
+		ax.legend()
+		#ax.set_title(train.title())
 
 
 	if fig is not None:
