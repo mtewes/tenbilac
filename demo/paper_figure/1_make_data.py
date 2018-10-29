@@ -8,7 +8,6 @@ import tenbilac
 import logging
 logging.basicConfig(level=logging.INFO)
 
-#np.random.seed(0)
 
 # We define the noise distribution:
 def noise(n):
